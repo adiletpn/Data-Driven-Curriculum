@@ -23,7 +23,7 @@ from .analytics import schools as schools_mod
 from .analytics import textbooks as textbooks_mod
 from .analytics import topics as topics_mod
 from .analytics import validation as validation_mod
-from .data.store import SCHEMA, SYNTH_DIR, TABLE_DESCRIPTIONS, store
+from .data.store import SCHEMA, TABLE_DESCRIPTIONS, store
 from .report import build_report
 
 @asynccontextmanager
@@ -36,6 +36,14 @@ app = FastAPI(title="Data-Driven Curriculum API", version="1.0.0", lifespan=life
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+
+
+@app.exception_handler(Exception)
+async def _analysis_error(_request, exc: Exception):
+    """Never return a bare 500: explain what went wrong (usually not enough data in a slice)."""
+    return JSONResponse(status_code=422, content={
+        "detail": f"Не удалось выполнить анализ для этих данных: {type(exc).__name__}: {exc}. "
+                  f"Чаще всего причина — слишком мало данных в выбранном срезе."})
 
 
 def clean(obj):
@@ -265,21 +273,25 @@ def data_schema():
                for k, v in SCHEMA.items()])
 
 
+_TEMPLATE_CACHE: dict[str, bytes] = {}
+
+
 @app.get("/api/data/template.zip")
 def data_template():
-    """Small sample of the synthetic dataset as a ready-to-fill template."""
-    ds = store.get()
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
-        for name in SCHEMA:
-            src = SYNTH_DIR / f"{name}.csv"
-            if src.exists():
-                df = pd.read_csv(src, dtype=str)
-                z.writestr(f"{name}.csv", df.head(50 if name == "responses" else 200).to_csv(index=False))
-            else:
-                z.writestr(f"{name}.csv", ",".join(SCHEMA[name]["required"] + SCHEMA[name]["optional"]) + "\n")
-        z.writestr("README.txt", "\n".join(f"{k}.csv — {v}" for k, v in TABLE_DESCRIPTIONS.items()))
-    buf.seek(0)
+    """A small but complete, analysable dataset (8 schools) in the upload format — fill in or upload as is."""
+    if "zip" not in _TEMPLATE_CACHE:
+        import tempfile
+
+        from .data.generator import generate
+        with tempfile.TemporaryDirectory() as tmp:
+            generate(tmp, seed=7, n_schools=8)
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+                for name in SCHEMA:
+                    z.write(Path(tmp) / f"{name}.csv", f"{name}.csv")
+                z.writestr("README.txt", "\n".join(f"{k}.csv — {v}" for k, v in TABLE_DESCRIPTIONS.items()))
+            _TEMPLATE_CACHE["zip"] = buf.getvalue()
+    buf = io.BytesIO(_TEMPLATE_CACHE["zip"])
     return StreamingResponse(buf, media_type="application/zip",
                              headers={"Content-Disposition": "attachment; filename=template.zip"})
 
