@@ -48,7 +48,7 @@ export default function Quality() {
         <Kpi label={t("q_all_items")} value={data.items.length} />
         <Kpi label={t("q_problems")} value={crit.length} tone={crit.length ? "bad" : "good"} note={t("q_excluded")} />
         <Kpi label={t("status_risk")} value={warn.length} tone={warn.length ? "warn" : "good"} />
-        <Kpi label="α" value={fmt(alphas.reduce((a, b) => a + b, 0) / Math.max(1, alphas.length), 2)} note={t("tp_reliability")} />
+        <Kpi label={t("tp_reliability")} value={fmt(alphas.reduce((a, b) => a + b, 0) / Math.max(1, alphas.length), 2)} note="α" />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1.1fr]">
@@ -60,13 +60,14 @@ export default function Quality() {
                 <ReferenceArea x1={30} x2={90} y1={0.25} y2={0.7} fill="#0f766e" fillOpacity={0.06} />
                 <XAxis type="number" dataKey="x" domain={[0, 100]} unit="%" tick={{ fontSize: 11, fill: "#64748b" }} name={t("q_difficulty")}
                   label={{ value: t("q_difficulty"), position: "insideBottom", offset: -4, fontSize: 11, fill: "#64748b" }} />
-                <YAxis type="number" dataKey="y" domain={[-0.4, 0.7]} tick={{ fontSize: 11, fill: "#64748b" }} name={t("q_discrimination")} />
+                <YAxis type="number" dataKey="y" domain={[-0.4, 0.7]} ticks={[-0.4, -0.2, 0, 0.2, 0.4, 0.6]} tick={{ fontSize: 11, fill: "#64748b" }} name={t("q_discrimination")}
+                  label={{ value: t("q_discrimination"), angle: -90, position: "insideLeft", offset: 18, fontSize: 11, fill: "#64748b" }} />
                 <ZAxis range={[46, 46]} />
                 <Tooltip formatter={(v: number) => fmt(v, 2)} labelFormatter={() => ""} content={({ payload }) => payload?.[0] ? (
                   <div className="rounded-md border border-line bg-white px-2 py-1 text-[12px] shadow">
                     <b>{(payload[0].payload as any).id}</b> · {fmt((payload[0].payload as any).x, 0)}% · {fmt((payload[0].payload as any).y, 2)}
                   </div>) : null} />
-                <Scatter data={pts}>
+                <Scatter isAnimationActive={false} data={pts}>
                   {pts.map((p, i) => <Cell key={i} fill={p.c} />)}
                 </Scatter>
               </ScatterChart>
