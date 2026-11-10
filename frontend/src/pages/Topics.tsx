@@ -122,7 +122,7 @@ function TopicDetail({ id, onClose }: { id: string; onClose: () => void }) {
             <tbody>
               {data.items.map((it) => (
                 <tr key={it.item_id}>
-                  <td className="font-mono text-[12px]">{it.item_id}</td>
+                  <td className="whitespace-nowrap font-mono text-[12px]">{it.item_id}</td>
                   <td className="num">{fmt(it.p_value * 100, 0)}%</td>
                   <td className="num">{fmt(it.discrimination, 2)}</td>
                   <td>{it.critical ? <Tag tone="bad">{it.flag_labels[0]}</Tag> : it.flags.length ? <Tag tone="warn">{it.flag_labels[0]}</Tag> : null}</td>
@@ -174,7 +174,7 @@ export default function Topics() {
         }
       />
       {error && <ErrorBox msg={error} />}
-      <div className={cx("grid gap-6", sel && "xl:grid-cols-[1fr_440px]")}>
+      <div className={cx("grid gap-6", sel && "xl:grid-cols-[minmax(0,1fr)_420px]")}>
         <Card pad={false}>
           {loading || !data ? <Loading /> : (
             <div className="overflow-x-auto">
@@ -195,13 +195,13 @@ export default function Topics() {
                   {rows.map((r) => (
                     <tr key={r.topic_id} className={cx("cursor-pointer", sel === r.topic_id && "[&>td]:bg-accent-soft/50")} onClick={() => setParams({ id: r.topic_id })}>
                       <td className="num text-muted">{r.order}</td>
-                      <td>
+                      <td className="min-w-[200px]">
                         <div className="font-medium text-ink">{L(r, "name")}</div>
                         <div className="text-[11.5px] text-muted">{L(r, "section")}</div>
                       </td>
                       <td className="num">{fmt(r.mean_pct)}%</td>
                       <td className="num font-semibold">{fmt(r.mastered_share)}%</td>
-                      <td className="hidden md:table-cell"><PctBar value={r.mastered_share} ci={r.ci} color={STATUS_COLOR[r.status]} /></td>
+                      <td className="hidden md:table-cell"><div style={{ width: 150 }}><PctBar value={r.mastered_share} ci={r.ci} color={STATUS_COLOR[r.status]} /></div></td>
                       <td className="num text-muted">±{fmt(r.class_spread)}</td>
                       <td className="num text-muted">{r.planned_hours}/{fmt(r.actual_hours)}</td>
                       <td><StatusBadge s={r.status} /></td>
@@ -212,7 +212,7 @@ export default function Topics() {
             </div>
           )}
         </Card>
-        {sel && <div className="xl:sticky xl:top-20 xl:self-start"><TopicDetail id={sel} onClose={() => setParams({})} /></div>}
+        {sel && <div className="min-w-0 xl:sticky xl:top-20 xl:self-start xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto"><TopicDetail id={sel} onClose={() => setParams({})} /></div>}
       </div>
     </div>
   );
