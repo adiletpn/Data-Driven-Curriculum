@@ -26,7 +26,10 @@ function stored<T extends string>(key: string, fallback: T): T {
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(() => stored<Lang>("ddc.lang", "ru"));
+  const [lang, setLangState] = useState<Lang>(() => {
+    const q = new URLSearchParams(window.location.search).get("lang");
+    return q === "kz" || q === "ru" ? q : stored<Lang>("ddc.lang", "ru");
+  });
   const [subject, setSubjectState] = useState<string>(() => stored("ddc.subject", ""));
   const { data: meta } = useApi<Meta>("/api/meta");
 
