@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Data (synthetic data is regenerated deterministically on first start)
+backend/data/synthetic/
+backend/data/active/
+backend/data/_incoming/
+
+# Node
+node_modules/
+frontend/dist/
+
+# Env / OS
+.env
+.env.local
+.DS_Store
