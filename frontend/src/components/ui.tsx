@@ -16,7 +16,7 @@ export function Card({ title, sub, right, children, className, pad = true }: {
       {(title || right) && (
         <header className="flex items-start justify-between gap-4 px-5 pt-4">
           <div>
-            {title && <h2 className="text-[15px] font-semibold text-ink">{title}</h2>}
+            {title && <h2 className="text-[15px] font-semibold tracking-tight text-ink">{title}</h2>}
             {sub && <p className="mt-0.5 text-[13px] text-muted">{sub}</p>}
           </div>
           {right}
@@ -31,7 +31,7 @@ export function PageHeader({ title, sub, right }: { title: string; sub?: string;
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-ink md:text-2xl">{title}</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-ink md:text-[26px]">{title}</h1>
         {sub && <p className="mt-1 max-w-3xl text-[14px] text-muted">{sub}</p>}
       </div>
       {right}
@@ -44,12 +44,12 @@ export function Kpi({ label, value, unit, note, tone = "default", icon }: {
 }) {
   const color = { default: "text-ink", bad: "text-bad", good: "text-good", warn: "text-warn" }[tone];
   return (
-    <div className="card p-4">
-      <div className="flex items-center gap-2 text-[12px] font-medium uppercase tracking-wide text-muted">
-        {icon}
-        {label}
+    <div className="card card-hover p-4">
+      <div className="flex items-center gap-2.5 text-[11.5px] font-semibold uppercase tracking-wider text-muted">
+        {icon && <span className="kpi-icon">{icon}</span>}
+        <span className="leading-tight">{label}</span>
       </div>
-      <div className={cx("mt-2 text-[28px] font-semibold leading-none tabular-nums", color)}>
+      <div className={cx("mt-3 text-[30px] font-semibold leading-none tracking-tight tabular-nums", color)}>
         {value}
         {unit && <span className="ml-1 text-base font-medium text-muted">{unit}</span>}
       </div>
