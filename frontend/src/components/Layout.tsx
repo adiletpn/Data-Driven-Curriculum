@@ -1,111 +1,130 @@
 import {
-  BarChart3, BookOpen, Bot, ClipboardCheck, Clock, Database, FileText, FlaskConical, LayoutDashboard,
-  Menu, Network, School, Scale, X,
+  BarChart3, BookOpen, Bot, Building2, ClipboardCheck, Clock, Database, FileText, FlaskConical, LayoutDashboard,
+  LogOut, Menu, Network, School, Scale, X,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { useApp } from "../lib/app";
+import { useApp, type Role } from "../lib/app";
 import type { Key } from "../lib/i18n";
 import { cx, Segmented } from "./ui";
 
-const NAV: { group: Key; items: { to: string; key: Key; icon: ReactNode }[] }[] = [
+const R: Role[] = ["admin", "methodologist"];
+const ALL: Role[] = ["admin", "methodologist", "director"];
+
+export const NAV: { group: Key; items: { to: string; key: Key; icon: ReactNode; roles: Role[] }[] }[] = [
   {
     group: "nav_group_analysis",
     items: [
-      { to: "/", key: "nav_overview", icon: <LayoutDashboard className="h-4 w-4" /> },
-      { to: "/topics", key: "nav_topics", icon: <BarChart3 className="h-4 w-4" /> },
-      { to: "/graph", key: "nav_graph", icon: <Network className="h-4 w-4" /> },
-      { to: "/quality", key: "nav_quality", icon: <ClipboardCheck className="h-4 w-4" /> },
+      { to: "/", key: "nav_overview", icon: <LayoutDashboard className="h-4 w-4" />, roles: R },
+      { to: "/school", key: "nav_my_school", icon: <Building2 className="h-4 w-4" />, roles: ["director"] },
+      { to: "/topics", key: "nav_topics", icon: <BarChart3 className="h-4 w-4" />, roles: ALL },
+      { to: "/graph", key: "nav_graph", icon: <Network className="h-4 w-4" />, roles: ALL },
+      { to: "/quality", key: "nav_quality", icon: <ClipboardCheck className="h-4 w-4" />, roles: ALL },
     ],
   },
   {
     group: "nav_group_decisions",
     items: [
-      { to: "/textbooks", key: "nav_textbooks", icon: <BookOpen className="h-4 w-4" /> },
-      { to: "/hours", key: "nav_hours", icon: <Clock className="h-4 w-4" /> },
-      { to: "/schools", key: "nav_schools", icon: <School className="h-4 w-4" /> },
-      { to: "/equity", key: "nav_equity", icon: <Scale className="h-4 w-4" /> },
+      { to: "/textbooks", key: "nav_textbooks", icon: <BookOpen className="h-4 w-4" />, roles: R },
+      { to: "/hours", key: "nav_hours", icon: <Clock className="h-4 w-4" />, roles: R },
+      { to: "/schools", key: "nav_schools", icon: <School className="h-4 w-4" />, roles: R },
+      { to: "/equity", key: "nav_equity", icon: <Scale className="h-4 w-4" />, roles: R },
     ],
   },
   {
     group: "nav_group_tools",
     items: [
-      { to: "/assistant", key: "nav_assistant", icon: <Bot className="h-4 w-4" /> },
-      { to: "/report", key: "nav_report", icon: <FileText className="h-4 w-4" /> },
-      { to: "/data", key: "nav_data", icon: <Database className="h-4 w-4" /> },
-      { to: "/validation", key: "nav_validation", icon: <FlaskConical className="h-4 w-4" /> },
+      { to: "/assistant", key: "nav_assistant", icon: <Bot className="h-4 w-4" />, roles: R },
+      { to: "/report", key: "nav_report", icon: <FileText className="h-4 w-4" />, roles: R },
+      { to: "/data", key: "nav_data", icon: <Database className="h-4 w-4" />, roles: ["admin"] },
+      { to: "/validation", key: "nav_validation", icon: <FlaskConical className="h-4 w-4" />, roles: R },
     ],
   },
 ];
 
+export function allowed(path: string, role: Role | undefined) {
+  if (!role) return false;
+  if (path === "/school") return true; // directors: own school; region roles: any school card
+  const item = NAV.flatMap((g) => g.items).find((i) => i.to === path);
+  return !item || item.roles.includes(role);
+}
+
 function Logo() {
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="grid h-9 w-9 place-items-center rounded-xl bg-accent text-white shadow-sm">
+    <div className="flex items-center gap-3">
+      <div className="logo-mark grid h-10 w-10 place-items-center rounded-xl text-white">
         <svg viewBox="0 0 32 32" className="h-5 w-5"><path d="M8 24V14M14 24V8M20 24v-8M26 24V12" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" /></svg>
       </div>
       <div className="leading-tight">
-        <div className="text-[14px] font-semibold text-ink">Data-Driven</div>
-        <div className="text-[12px] font-medium text-muted">Curriculum</div>
+        <div className="text-[14px] font-semibold text-white">Data-Driven</div>
+        <div className="text-[12px] font-medium text-slate-400">Curriculum</div>
       </div>
     </div>
   );
 }
 
 function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const { t, meta } = useApp();
+  const { t, meta, user, logout, L } = useApp();
   return (
-    <nav className="flex h-full flex-col gap-6 px-3 py-5">
+    <nav className="sidebar flex h-full flex-col gap-6 px-3 py-5">
       <div className="px-2"><Logo /></div>
-      {NAV.map((g) => (
-        <div key={g.group}>
-          <div className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400">{t(g.group)}</div>
-          <div className="flex flex-col gap-0.5">
-            {g.items
-              .filter((i) => i.to !== "/validation" || meta?.has_ground_truth !== false)
-              .map((i) => (
-                <NavLink
-                  key={i.to}
-                  to={i.to}
-                  end={i.to === "/"}
-                  onClick={onNavigate}
-                  className={({ isActive }) =>
-                    cx(
-                      "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13.5px] font-medium transition",
-                      isActive ? "bg-accent-soft text-accent" : "text-slate-600 hover:bg-slate-100 hover:text-ink",
-                    )
-                  }
-                >
-                  {i.icon}
-                  {t(i.key)}
-                </NavLink>
-              ))}
+      <div className="flex-1 space-y-6 overflow-y-auto">
+        {NAV.map((g) => {
+          const items = g.items.filter((i) => user && i.roles.includes(user.role))
+            .filter((i) => i.to !== "/validation" || meta?.has_ground_truth !== false);
+          if (!items.length) return null;
+          return (
+            <div key={g.group}>
+              <div className="mb-1.5 px-3 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-500">{t(g.group)}</div>
+              <div className="flex flex-col gap-0.5">
+                {items.map((i) => (
+                  <NavLink key={i.to} to={i.to} end={i.to === "/"} onClick={onNavigate}
+                    className={({ isActive }) => cx("nav-item", isActive && "nav-item-active")}>
+                    {i.icon}
+                    {t(i.key)}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {user && (
+        <div className="rounded-xl bg-white/[0.05] p-3 ring-1 ring-white/10">
+          <div className="flex items-center gap-3">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-teal-400 to-indigo-500 text-[13px] font-semibold text-white">
+              {L(user, "name").slice(0, 1)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[13px] font-medium text-white">{L(user, "name")}</div>
+              <div className="text-[11.5px] text-slate-400">{t(`role_${user.role}` as Key)}</div>
+            </div>
+            <button onClick={logout} title={t("logout")} className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white">
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </div>
-      ))}
-      <div className="mt-auto px-3 text-[11px] leading-relaxed text-slate-400">
-        Zhambyl Hub Hackathon · 2026
-      </div>
+      )}
     </nav>
   );
 }
 
 export default function Layout({ children }: { children: ReactNode }) {
-  const { t, lang, setLang, subject, setSubject, meta, L } = useApp();
+  const { t, lang, setLang, subject, setSubject, meta, L, isRegion } = useApp();
   const [open, setOpen] = useState(false);
   const loc = useLocation();
   const wide = loc.pathname === "/graph";
 
   return (
     <div className="flex min-h-full">
-      <aside className="no-print sticky top-0 hidden h-screen w-60 shrink-0 border-r border-line bg-white lg:block">
+      <aside className="no-print sticky top-0 hidden h-screen w-64 shrink-0 lg:block">
         <Sidebar />
       </aside>
       {open && (
         <div className="no-print fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-slate-900/30" onClick={() => setOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 w-64 bg-white shadow-xl">
-            <button className="absolute right-3 top-4 p-1 text-muted" onClick={() => setOpen(false)} aria-label={t("close")}>
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 w-72 shadow-2xl">
+            <button className="absolute right-3 top-4 z-10 p-1 text-slate-400" onClick={() => setOpen(false)} aria-label={t("close")}>
               <X className="h-5 w-5" />
             </button>
             <Sidebar onNavigate={() => setOpen(false)} />
@@ -113,31 +132,27 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
       )}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="no-print sticky top-0 z-30 flex flex-wrap items-center gap-3 border-b border-line bg-white/85 px-4 py-2.5 backdrop-blur md:px-8">
+        <header className="no-print sticky top-0 z-30 flex flex-wrap items-center gap-3 border-b border-line/70 bg-white/75 px-4 py-2.5 backdrop-blur-xl md:px-8">
           <button className="p-1 text-muted lg:hidden" onClick={() => setOpen(true)} aria-label="menu">
             <Menu className="h-5 w-5" />
           </button>
           {meta && (
-            <Segmented
-              value={subject}
-              onChange={setSubject}
-              options={meta.subjects.map((s) => ({ value: s.subject_id, label: `${L(s, "name")} ${s.grade}` }))}
-            />
+            <Segmented value={subject} onChange={setSubject}
+              options={meta.subjects.map((s) => ({ value: s.subject_id, label: `${L(s, "name")} ${s.grade}` }))} />
           )}
-          <div className="hidden text-[13px] text-muted md:block">{t("app_tagline")}</div>
+          <div className="hidden text-[13px] text-muted xl:block">{t("app_tagline")}</div>
           <div className="ml-auto flex items-center gap-3">
-            {meta && (
-              <NavLink to="/data" className={cx(
-                "hidden rounded-full px-2.5 py-1 text-[12px] font-medium sm:inline-flex",
-                meta.source === "synthetic" ? "bg-warn-soft text-warn" : "bg-good-soft text-good",
-              )}>
+            {meta && isRegion && (
+              <span className={cx("hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium sm:inline-flex",
+                meta.source === "synthetic" ? "bg-warn-soft text-warn" : "bg-good-soft text-good")}>
+                <span className={cx("h-1.5 w-1.5 rounded-full", meta.source === "synthetic" ? "bg-warn" : "bg-good")} />
                 {meta.source === "synthetic" ? t("synthetic") : t("uploaded")} · {meta.stats.students.toLocaleString("ru-RU")} {t("students")}
-              </NavLink>
+              </span>
             )}
             <Segmented size="sm" value={lang} onChange={setLang} options={[{ value: "ru", label: "РУС" }, { value: "kz", label: "ҚАЗ" }]} />
           </div>
         </header>
-        <main className={cx("print-area mx-auto w-full flex-1 px-4 py-6 md:px-8 md:py-8", wide ? "max-w-[1600px]" : "max-w-[1320px]")}>
+        <main key={loc.pathname} className={cx("page-enter print-area mx-auto w-full flex-1 px-4 py-6 md:px-8 md:py-8", wide ? "max-w-[1600px]" : "max-w-[1320px]")}>
           {children}
         </main>
       </div>
