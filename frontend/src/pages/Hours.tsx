@@ -18,9 +18,9 @@ function Curve({ tp }: { tp: HoursTopic }) {
     <Card title={`${t("hr_curve")}: ${L(tp, "name")}`} sub={t("hr_curve_sub")}>
       <div className="h-72">
         <ResponsiveContainer>
-          <ComposedChart data={data} margin={{ left: -10, right: 12, top: 8, bottom: 4 }}>
+          <ComposedChart data={data} margin={{ left: -10, right: 12, top: 22, bottom: 4 }}>
             <CartesianGrid stroke="#eef2f6" />
-            <XAxis dataKey="h" type="number" domain={["dataMin - 0.5", "dataMax + 0.5"]} tick={{ fontSize: 11, fill: "#64748b" }} allowDecimals={false}
+            <XAxis dataKey="h" type="number" domain={["dataMin - 0.5", "dataMax + 0.5"]} ticks={tp.curve.map((c) => c.h)} tick={{ fontSize: 11, fill: "#64748b" }} allowDecimals={false}
               label={{ value: t("hours_short"), position: "insideBottomRight", offset: -2, fontSize: 11, fill: "#64748b" }} />
             <YAxis domain={[lo, hi]} tick={{ fontSize: 11, fill: "#64748b" }} unit="%" />
             <Tooltip formatter={(v: any) => (Array.isArray(v) ? `${fmt(v[0])}–${fmt(v[1])}%` : `${fmt(v)}%`)} labelFormatter={(h) => `${h} ${t("hours_short")}`} />
@@ -72,7 +72,8 @@ export default function Hours() {
   if (error) return <ErrorBox msg={error} />;
   if (loading || !data) return <Loading />;
   const view = custom && whatif ? whatif : data;
-  const selected = data.topics.find((x) => x.topic_id === (sel ?? data.increases[0])) ?? data.topics[0];
+  const top = [...data.topics].sort((a, b) => b.predicted_change - a.predicted_change)[0];
+  const selected = data.topics.find((x) => x.topic_id === sel) ?? top ?? data.topics[0];
   const books = meta?.textbooks.filter((b) => b.subject_id === subject) ?? [];
   const customTotal = custom ? Object.values(custom).reduce((a, b) => a + b, 0) : 0;
   const maxDelta = Math.max(1, ...data.topics.map((x) => Math.abs(x.delta)));
@@ -105,15 +106,16 @@ export default function Hours() {
       </Card>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Kpi label={t("hr_gain")} value={signed(view.expected_gain_pp, 2)} unit={t("pp")} tone={view.expected_gain_pp > 0 ? "good" : "bad"}
-          note={`${t("ci95")}: ${fmt(view.gain_ci[0], 2)} … ${fmt(view.gain_ci[1], 2)}`} />
+        <Kpi label={`${t("hr_weak_gain")} (${view.n_weak_topics})`} value={signed(view.weak_topics_gain_pp, 2)} unit={t("pp")} tone={(view.weak_topics_gain_pp ?? 0) > 0 ? "good" : "bad"}
+          note={`${t("hr_avg_all")}: ${signed(view.expected_gain_pp, 2)} ${t("pp")} [${fmt(view.gain_ci[0], 2)}; ${fmt(view.gain_ci[1], 2)}]`} />
+        <Kpi label={t("hr_extra")} value={view.extra_masteries > 0 ? `+${view.extra_masteries}` : view.extra_masteries} tone={view.extra_masteries > 0 ? "good" : "default"}
+          note={`${t("hr_extra_note")} · ${t("hr_prob")}: ${fmt((view.prob_improvement ?? 0) * 100, 0)}%`} />
         <Kpi label={t("hr_equiv")} value={view.equivalent_extra_hours != null ? `+${view.equivalent_extra_hours}` : "—"} unit={t("hours_short")}
           note={`${t("hr_total")}: ${view.total_hours} ${t("hours_short")}`} />
         <Kpi label={t("hr_moved")} value={view.hours_moved} unit={t("hours_short")} note={`${view.n_classes} ${t("classes")} · ${view.n_schools} ${t("schools")}`} />
-        <Kpi label={t("hr_prob")} value={fmt((view.prob_improvement ?? 0) * 100, 0)} unit="%" tone="good" note="bootstrap" />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.25fr_1fr]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(340px,1fr)]">
         <Card
           title={custom ? t("hr_whatif") : t("hr_rec")}
           sub={custom ? t("hr_whatif_sub") : undefined}
@@ -138,10 +140,9 @@ export default function Hours() {
                   <th>{t("topic")}</th>
                   <th className="num">{t("hr_plan")}</th>
                   <th className="num">{custom ? t("hr_whatif") : t("hr_rec")}</th>
-                  {!custom && <th style={{ width: 110 }}></th>}
+                  {!custom && <th style={{ width: 90 }}></th>}
                   <th className="num">{t("hr_return")}</th>
                   <th className="num">{t("hr_forecast")}</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -149,7 +150,7 @@ export default function Hours() {
                   const base = data.topics.find((y) => y.topic_id === x.topic_id)!;
                   return (
                     <tr key={x.topic_id} className={cx("cursor-pointer", selected.topic_id === x.topic_id && "[&>td]:bg-accent-soft/50")} onClick={() => setSel(x.topic_id)}>
-                      <td>
+                      <td className="min-w-[230px]">
                         <div className="flex items-center gap-2 font-medium">{L(x, "name")}</div>
                         <div className="mt-0.5 flex flex-wrap gap-1">
                           <StatusBadge s={x.status} />
@@ -172,7 +173,7 @@ export default function Hours() {
                       </td>
                       {!custom && (
                         <td>
-                          <div className="relative h-4">
+                          <div className="relative h-4" style={{ width: 84 }}>
                             <div className="absolute inset-y-0 left-1/2 w-px bg-slate-300" />
                             {x.delta !== 0 && (
                               <div className={cx("absolute inset-y-0.5 rounded", x.delta > 0 ? "bg-good" : "bg-bad")}
@@ -186,7 +187,6 @@ export default function Hours() {
                         {fmt(x.predicted_plan, 0)}→<b>{fmt(x.predicted_rec, 0)}%</b>
                         <div className={cx("text-[11px]", x.predicted_change > 0 ? "text-good" : x.predicted_change < 0 ? "text-bad" : "text-muted")}>{signed(x.predicted_change, 1)} {t("pp")}</div>
                       </td>
-                      <td></td>
                     </tr>
                   );
                 })}
