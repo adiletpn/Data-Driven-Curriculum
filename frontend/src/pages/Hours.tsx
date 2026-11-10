@@ -115,7 +115,7 @@ export default function Hours() {
         <Kpi label={t("hr_moved")} value={view.hours_moved} unit={t("hours_short")} note={`${view.n_classes} ${t("classes")} · ${view.n_schools} ${t("schools")}`} />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(340px,1fr)]">
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.6fr)_minmax(340px,1fr)]">
         <Card
           title={custom ? t("hr_whatif") : t("hr_rec")}
           sub={custom ? t("hr_whatif_sub") : undefined}
@@ -200,7 +200,7 @@ export default function Hours() {
           )}
         </Card>
 
-        <div className="space-y-6 xl:sticky xl:top-20 xl:self-start">
+        <div className="space-y-6 2xl:sticky 2xl:top-20 2xl:self-start">
           <Curve tp={selected} />
           <Note>{t("hr_how")}</Note>
         </div>
