@@ -8,11 +8,10 @@ import type { TbSection, TextbookData } from "../lib/types";
 
 const PALETTE = ["#0f766e", "#2563eb", "#9333ea", "#c2410c"];
 
-function MeansPanel({ title, sec, kind, books, color }: { title: string; sec: TbSection; kind: "naive" | "adjusted"; books: string[]; color: (b: string) => string }) {
+function MeansPanel({ title, sec, kind, books, color, lo }: { title: string; sec: TbSection; kind: "naive" | "adjusted"; books: string[]; color: (b: string) => string; lo: number }) {
   const { tbTitle, t } = useApp();
   const vals = books.map((b) => ({ b, v: sec[kind][b].mean, ci: kind === "naive" ? sec.naive[b].ci : null }));
   const ranking = kind === "naive" ? sec.naive_ranking : sec.ranking;
-  const lo = Math.max(0, Math.floor((Math.min(...vals.map((x) => x.v)) - 6) / 5) * 5);
   return (
     <div className={cx("rounded-xl border p-4", kind === "adjusted" ? "border-accent/30 bg-accent-soft/30" : "border-line bg-slate-50/60")}>
       <div className="mb-3 text-[12px] font-semibold uppercase tracking-wide text-muted">{title}</div>
@@ -46,6 +45,8 @@ export default function Textbooks() {
   const sec = data.sections.find((s) => s.section === secKey) ?? data.sections[0];
   const books = data.textbooks;
   const color = (b: string) => PALETTE[books.indexOf(b) % PALETTE.length];
+  const allMeans = books.flatMap((b) => [sec.naive[b].mean, sec.adjusted[b].mean]);
+  const lo = Math.max(0, Math.floor((Math.min(...allMeans) - 6) / 5) * 5);
   const range = Math.max(10, ...sec.pairs.map((p) => Math.max(Math.abs(p.ci[0] ?? 0), Math.abs(p.ci[1] ?? 0)))) * 1.1;
 
   return (
@@ -74,8 +75,8 @@ export default function Textbooks() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <MeansPanel title={t("tb_naive")} sec={sec} kind="naive" books={books} color={color} />
-        <MeansPanel title={t("tb_adjusted")} sec={sec} kind="adjusted" books={books} color={color} />
+        <MeansPanel title={t("tb_naive")} sec={sec} kind="naive" books={books} color={color} lo={lo} />
+        <MeansPanel title={t("tb_adjusted")} sec={sec} kind="adjusted" books={books} color={color} lo={lo} />
       </div>
       <Note>{t("tb_controls")} n = {sec.n_students.toLocaleString("ru-RU")} {t("students")}, {sec.n_schools} {t("schools")}, R² = {fmt(sec.r2, 2)}.</Note>
 
