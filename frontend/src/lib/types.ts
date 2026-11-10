@@ -78,7 +78,7 @@ export interface HoursTopic {
 export interface HoursData {
   subject_id: string; mode: string; flex: number; filters: Record<string, string>; total_hours: number; plan_total: number;
   n_classes: number; n_schools: number; expected_gain_pp: number; gain_ci: [number, number]; prob_improvement: number;
-  equivalent_extra_hours: number | null; hours_moved: number; topics: HoursTopic[]; increases: string[]; decreases: string[]; custom: boolean;
+  equivalent_extra_hours: number | null; hours_moved: number; weak_topics_gain_pp: number | null; n_weak_topics: number; extra_masteries: number; topics: HoursTopic[]; increases: string[]; decreases: string[]; custom: boolean;
 }
 
 export interface ItemRow {

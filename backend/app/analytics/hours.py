@@ -271,11 +271,17 @@ def optimize(ds, subject_id: str, mode: str = "balanced", flex: float = 0.3, tot
             curve=curve, scatter=scatter))
 
     moves = sorted([x for x in rows if x["delta"] != 0], key=lambda x: -x["delta"])
+    weak = [x for x in rows if x["status"] in ("critical", "risk")]
+    weak_gain = float(np.mean([x["predicted_change"] for x in weak])) if weak else None
+    # expected number of additional "student x topic" masteries (first-order: change in mean ~ change in share)
+    n_students = {t: (tt.get(t, {}).get("n_students") or 0) for t in tids}
+    extra = sum((x["predicted_change"] or 0) / 100 * n_students[x["topic_id"]] for x in rows)
     return dict(
         subject_id=subject_id, mode=mode, flex=flex, filters=filters, total_hours=total, plan_total=plan_total,
         n_classes=int(c["class_id"].nunique()), n_schools=int(c["school_id"].nunique()),
         expected_gain_pp=r(gain * 100, 2), gain_ci=[r(g_lo * 100, 2), r(g_hi * 100, 2)],
         prob_improvement=r(p_positive, 3), equivalent_extra_hours=equiv,
         hours_moved=int(sum(max(x["delta"], 0) for x in rows)),
+        weak_topics_gain_pp=r(weak_gain, 2), n_weak_topics=len(weak), extra_masteries=int(round(extra)),
         topics=rows, increases=[x["topic_id"] for x in moves if x["delta"] > 0],
         decreases=[x["topic_id"] for x in moves if x["delta"] < 0], custom=bool(custom))
