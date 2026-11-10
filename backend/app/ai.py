@@ -20,8 +20,43 @@ from .analytics import topics as topics_mod
 MODEL = "claude-opus-5-5"
 
 
+def _load_env_file():
+    """Minimal .env loader (backend/.env), so keys never live in the code or git."""
+    from pathlib import Path
+    f = Path(__file__).resolve().parents[1] / ".env"
+    if f.exists():
+        for line in f.read_text().splitlines():
+            if "=" in line and not line.lstrip().startswith("#"):
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+
+
+_load_env_file()
+
+
+def provider() -> str | None:
+    """'openai' — any OpenAI-compatible API (e.g. xciro): needs XCIRO_API_KEY + XCIRO_BASE_URL + XCIRO_MODEL;
+    'claude' — Anthropic API; None — offline mode."""
+    if os.environ.get("XCIRO_API_KEY") and os.environ.get("XCIRO_BASE_URL") and os.environ.get("XCIRO_MODEL"):
+        return "openai"
+    if os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"):
+        return "claude"
+    return None
+
+
 def available() -> bool:
-    return bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
+    return provider() is not None
+
+
+def _ask_openai_compatible(system: str, messages: list[dict]) -> str:
+    import httpx
+    base = os.environ["XCIRO_BASE_URL"].rstrip("/")
+    r = httpx.post(f"{base}/chat/completions", timeout=90,
+                   headers={"Authorization": f"Bearer {os.environ['XCIRO_API_KEY']}"},
+                   json={"model": os.environ["XCIRO_MODEL"], "temperature": 0.2, "max_tokens": 2000,
+                         "messages": [{"role": "system", "content": system}] + messages})
+    r.raise_for_status()
+    return r.json()["choices"][0]["message"]["content"].strip()
 
 
 def _context(ds, subject_id: str) -> dict:
@@ -110,8 +145,6 @@ def answer(ds, subject_id: str, question: str, lang: str = "ru", history: list[d
     if not available():
         return _offline(ds, subject_id, question, lang)
 
-    import anthropic
-
     data = json.dumps(_context(ds, subject_id), ensure_ascii=False, sort_keys=True, default=str)
     system = SYSTEM.format(lang="казахский" if lang == "kz" else "русский", data=data)
     messages = []
@@ -122,6 +155,17 @@ def answer(ds, subject_id: str, question: str, lang: str = "ru", history: list[d
     # the API requires alternating roles starting with "user"
     while messages and messages[0]["role"] != "user":
         messages.pop(0)
+
+    if provider() == "openai":
+        try:
+            text = _ask_openai_compatible(system, messages)
+            return dict(answer=text, mode="llm", model=os.environ["XCIRO_MODEL"], sources=[])
+        except Exception as e:  # network/quota/format errors -> never break the page
+            out = _offline(ds, subject_id, question, lang)
+            out["notice"] = f"llm_error: {type(e).__name__}"
+            return out
+
+    import anthropic
 
     client = anthropic.Anthropic()
     try:
