@@ -15,7 +15,7 @@ from .common import pp, r
 from .items import apply_exclusions
 from .topics import topic_table
 
-STRONG, MODERATE = 0.12, 0.08
+STRONG, MODERATE = 0.06, 0.03
 
 
 def _residualize(y: np.ndarray, X: np.ndarray) -> np.ndarray:
@@ -52,7 +52,9 @@ def analyze(ds, subject_id: str) -> dict:
 
         def edge(p, t):
             rest = dm_total - dm_wide[p].to_numpy() - dm_wide[t].to_numpy()
-            X = np.column_stack([np.ones(len(rest)), rest, dm_base])
+            rz = (rest - rest.mean()) / (rest.std() or 1)
+            # polynomial terms absorb ceiling/floor non-linearity of the ability effect
+            X = np.column_stack([np.ones(len(rest)), rz, rz ** 2, rz ** 3, dm_base])
             ry = _residualize(dm_wide[t].to_numpy(), X)
             rx = _residualize(dm_wide[p].to_numpy(), X)
             pc = float(np.corrcoef(rx, ry)[0, 1]) if rx.std() > 0 and ry.std() > 0 else 0.0
@@ -83,15 +85,35 @@ def analyze(ds, subject_id: str) -> dict:
                 e = edge(p, t)
                 e["declared"] = True
                 edges.append(e)
-        hidden = []
-        for i, p in enumerate(cols):
+        # Background level: even unrelated topics correlate a little after controls (imperfect ability proxy).
+        # Dependencies are judged by the EXCESS over the median of undeclared pairs.
+        others = []
+        for p in cols:
             for t in cols:
                 if order.get(p, 0) < order.get(t, 0) and (p, t) not in declared:
                     e = edge(p, t)
-                    if e["partial_corr"] is not None and e["partial_corr"] >= STRONG * 1.25:
-                        e["declared"] = False
-                        hidden.append(e)
-        hidden.sort(key=lambda e: -e["partial_corr"])
+                    e["declared"] = False
+                    others.append(e)
+        background = float(np.median([e["partial_corr"] for e in others])) if others else 0.0
+        for e in edges + others:
+            ex = (e["partial_corr"] or 0) - background
+            e["excess"] = r(ex, 3)
+            e["strength"] = "strong" if ex >= STRONG else "moderate" if ex >= MODERATE else "none"
+        # reachability in the declared graph: undeclared pair reachable via a chain = indirect dependency
+        children = {}
+        for p_, t_ in declared:
+            children.setdefault(p_, set()).add(t_)
+
+        def reachable(a, b, seen=None):
+            seen = seen or set()
+            for c in children.get(a, ()):
+                if c == b or (c not in seen and reachable(c, b, seen | {c})):
+                    return True
+            return False
+
+        for e in others:
+            e["kind"] = "indirect" if reachable(e["prereq_id"], e["topic_id"]) else "unexpected"
+        hidden = sorted([e for e in others if e["strength"] == "strong"], key=lambda e: (e["kind"] != "unexpected", -e["excess"]))
 
         # root causes: weak topic whose strong prerequisite is also weak
         root_causes = []
@@ -109,7 +131,7 @@ def analyze(ds, subject_id: str) -> dict:
         influence = {t: 0.0 for t in cols}
         for e in edges:
             if e["strength"] != "none":
-                influence[e["prereq_id"]] += max(e["partial_corr"] or 0, 0)
+                influence[e["prereq_id"]] += max(e["excess"] or 0, 0) * 2
 
         nodes = [dict(topic_id=t["topic_id"], name=t["name"], name_kz=t["name_kz"], section=t["section"],
                       section_kz=t["section_kz"], order=int(t["order"]),
@@ -117,7 +139,7 @@ def analyze(ds, subject_id: str) -> dict:
                       status=tt.get(t["topic_id"], {}).get("status"),
                       influence=r(influence.get(t["topic_id"], 0), 3))
                  for _, t in topics.iterrows()]
-        return dict(nodes=nodes, edges=edges, hidden=hidden[:8], root_causes=root_causes,
+        return dict(nodes=nodes, edges=edges, hidden=hidden[:8], root_causes=root_causes, background=r(background, 3),
                     nominal=[e for e in edges if e["strength"] == "none"])
 
     return ds.cached(("prereq", subject_id), build)
