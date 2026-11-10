@@ -37,7 +37,7 @@ T = {
         ],
         generated="Сформировано", subject="Предмет", students="учеников", schools_n="школ",
         mean="Средний балл", mastered="Доля усвоенных тем", critical="Критичных тем",
-        gain="Ожидаемый эффект перераспределения часов", gain_unit="п.п. к среднему усвоению",
+        gain="Эффект перераспределения часов в слабых темах", pp="п.п.", avg_all="в среднем по предмету",
         equiv="эквивалентно дополнительным часам", none="Нет",
     ),
     "kz": dict(
@@ -65,7 +65,7 @@ T = {
         ],
         generated="Құрастырылды", subject="Пән", students="оқушы", schools_n="мектеп",
         mean="Орташа балл", mastered="Меңгерілген тақырыптар үлесі", critical="Сыни тақырыптар",
-        gain="Сағаттарды қайта бөлудің күтілетін әсері", gain_unit="п.т. орташа меңгеруге",
+        gain="Әлсіз тақырыптардағы сағаттарды қайта бөлу әсері", pp="п.т.", avg_all="пән бойынша орташа",
         equiv="қосымша сағатқа тең", none="Жоқ",
     ),
 }
@@ -97,8 +97,9 @@ def build_report(ds, subject_id: str, lang: str = "ru") -> dict:
             dict(label=L["mean"], value=f"{_f(ov['mean_pct'])}%"),
             dict(label=L["mastered"], value=f"{_f(ov['mastered_share'])}%"),
             dict(label=L["critical"], value=str(ov["critical_topics"])),
-            dict(label=L["gain"], value=f"+{_f(hr['expected_gain_pp'], 2)} {L['gain_unit']}",
-                 note=f"95%: [{_f(hr['gain_ci'][0], 2)}; {_f(hr['gain_ci'][1], 2)}]; {L['equiv']}: +{hr['equivalent_extra_hours'] or '—'}"),
+            dict(label=L["gain"], value=f"+{_f(hr['weak_topics_gain_pp'], 2)} {L['pp']}",
+                 note=f"{L['avg_all']}: +{_f(hr['expected_gain_pp'], 2)} [{_f(hr['gain_ci'][0], 2)}; {_f(hr['gain_ci'][1], 2)}]; "
+                      f"{L['equiv']}: +{hr['equivalent_extra_hours'] or '—'}"),
         ]),
         dict(kind="findings", title=L["findings"], items=[
             dict(severity=i["severity"], title=i[f"title_{lang}"], text=i[f"text_{lang}"]) for i in ins]),
