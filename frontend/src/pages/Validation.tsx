@@ -24,7 +24,9 @@ export default function Validation() {
   const tb = data.textbooks;
   const lim = Math.ceil(Math.max(...tb.flatMap((x) => [Math.abs(x.true), Math.abs(x.adjusted), Math.abs(x.naive)])) / 5) * 5;
   const hlim = Math.ceil(Math.max(...data.hours.flatMap((x) => [x.true, x.estimated])) * 2) / 2;
-  const policy = data.policy.map((p) => ({ name: p.subject_id, [t("vl_oracle")]: p.oracle, [t("vl_ours")]: p.ours, [t("vl_heuristic")]: p.heuristic }));
+  const subjName = (id: string) => meta?.subjects.find((x) => x.subject_id === id)?.[lang === "kz" ? "name_kz" : "name"] ?? id;
+  const policy = data.policy.map((p) => ({ name: subjName(p.subject_id), oracle: p.oracle, ours: p.ours, heuristic: p.heuristic }));
+  const ticks = (m: number) => [-m, -m / 2, 0, m / 2, m];
 
   return (
     <div className="space-y-6">
@@ -44,14 +46,14 @@ export default function Validation() {
             <ResponsiveContainer>
               <ScatterChart margin={{ left: -8, right: 12, top: 8, bottom: 8 }}>
                 <CartesianGrid stroke="#eef2f6" />
-                <XAxis type="number" dataKey="x" domain={[-lim, lim]} tick={{ fontSize: 11, fill: "#64748b" }} name={t("vl_true")} />
-                <YAxis type="number" dataKey="y" domain={[-lim, lim]} tick={{ fontSize: 11, fill: "#64748b" }} />
+                <XAxis type="number" dataKey="x" domain={[-lim, lim]} ticks={ticks(lim)} tick={{ fontSize: 11, fill: "#64748b" }} name={t("vl_true")} />
+                <YAxis type="number" dataKey="y" domain={[-lim, lim]} ticks={ticks(lim)} tick={{ fontSize: 11, fill: "#64748b" }} />
                 <ZAxis range={[50, 50]} />
                 <ReferenceLine segment={[{ x: -lim, y: -lim }, { x: lim, y: lim }]} stroke="#94a3b8" strokeDasharray="4 3" />
                 <Tooltip formatter={(v: number) => fmt(v)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Scatter name={t("vl_ours")} data={tb.map((x) => ({ x: x.true, y: x.adjusted }))} fill="#0f766e" />
-                <Scatter name={t("vl_naive")} data={tb.map((x) => ({ x: x.true, y: x.naive }))} fill="#f59e0b" shape="diamond" />
+                <Scatter isAnimationActive={false} name={t("vl_ours")} data={tb.map((x) => ({ x: x.true, y: x.adjusted }))} fill="#0f766e" />
+                <Scatter isAnimationActive={false} name={t("vl_naive")} data={tb.map((x) => ({ x: x.true, y: x.naive }))} fill="#f59e0b" shape="diamond" />
               </ScatterChart>
             </ResponsiveContainer>
           </div>
@@ -63,12 +65,12 @@ export default function Validation() {
             <ResponsiveContainer>
               <ScatterChart margin={{ left: -8, right: 12, top: 8, bottom: 8 }}>
                 <CartesianGrid stroke="#eef2f6" />
-                <XAxis type="number" dataKey="x" domain={[0, hlim]} tick={{ fontSize: 11, fill: "#64748b" }} />
-                <YAxis type="number" dataKey="y" domain={[0, hlim]} tick={{ fontSize: 11, fill: "#64748b" }} />
+                <XAxis type="number" dataKey="x" domain={[0, hlim]} ticks={[0, hlim / 4, hlim / 2, (3 * hlim) / 4, hlim]} tick={{ fontSize: 11, fill: "#64748b" }} />
+                <YAxis type="number" dataKey="y" domain={[0, hlim]} ticks={[0, hlim / 4, hlim / 2, (3 * hlim) / 4, hlim]} tick={{ fontSize: 11, fill: "#64748b" }} />
                 <ZAxis range={[50, 50]} />
                 <ReferenceLine segment={[{ x: 0, y: 0 }, { x: hlim, y: hlim }]} stroke="#94a3b8" strokeDasharray="4 3" />
                 <Tooltip content={({ payload }) => payload?.[0] ? <div className="rounded border border-line bg-white px-2 py-1 text-[12px] shadow">{(payload[0].payload as any).n}</div> : null} />
-                <Scatter data={data.hours.map((x) => ({ x: x.true, y: x.estimated, n: x.name }))} fill="#0f766e" />
+                <Scatter isAnimationActive={false} data={data.hours.map((x) => ({ x: x.true, y: x.estimated, n: x.name }))} fill="#0f766e" />
               </ScatterChart>
             </ResponsiveContainer>
           </div>
@@ -76,7 +78,7 @@ export default function Validation() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <Card title={t("vl_policy")} sub={`${t("pp")}`}>
+        <Card title={t("vl_policy")} sub={t("vl_policy_sub")}>
           <div className="h-64">
             <ResponsiveContainer>
               <BarChart data={policy} margin={{ left: -10, right: 8, top: 8 }}>
@@ -85,9 +87,9 @@ export default function Validation() {
                 <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
                 <Tooltip formatter={(v: number) => fmt(v, 3)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey={t("vl_oracle")} fill="#cbd5e1" radius={[3, 3, 0, 0]} />
-                <Bar dataKey={t("vl_ours")} fill="#0f766e" radius={[3, 3, 0, 0]} />
-                <Bar dataKey={t("vl_heuristic")} fill="#f59e0b" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="oracle" name={t("vl_oracle")} fill="#cbd5e1" radius={[3, 3, 0, 0]} isAnimationActive={false} />
+                <Bar dataKey="ours" name={t("vl_ours")} fill="#0f766e" radius={[3, 3, 0, 0]} isAnimationActive={false} />
+                <Bar dataKey="heuristic" name={t("vl_heuristic")} fill="#f59e0b" radius={[3, 3, 0, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
