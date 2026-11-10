@@ -40,3 +40,8 @@ def test_offline_assistant(client, monkeypatch):
 def test_upload_rejects_incomplete_dataset(client):
     r = client.post("/api/data/upload", files=[("files", ("schools.csv", b"school_id,name\nS1,A\n", "text/csv"))])
     assert r.status_code == 200 and r.json()["ok"] is False
+
+
+def test_excel_export(client):
+    r = client.get("/api/export.xlsx?subject=ALG7")
+    assert r.status_code == 200 and r.content[:2] == b"PK"

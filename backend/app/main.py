@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import io
 import math
+from contextlib import asynccontextmanager
 import threading
 import zipfile
 from pathlib import Path
@@ -25,7 +26,13 @@ from .analytics import validation as validation_mod
 from .data.store import SCHEMA, SYNTH_DIR, TABLE_DESCRIPTIONS, store
 from .report import build_report
 
-app = FastAPI(title="Data-Driven Curriculum API", version="1.0.0")
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    _warmup_async()  # precompute analytics in the background so the first page loads fast
+    yield
+
+
+app = FastAPI(title="Data-Driven Curriculum API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
@@ -199,6 +206,58 @@ def report(subject: str | None = None, lang: str = "ru"):
     return ok(build_report(store.get(), _subject(subject), lang))
 
 
+@app.get("/api/export.xlsx")
+def export_xlsx(subject: str | None = None):
+    """All recommendations as an Excel workbook (methodologists live in Excel)."""
+    ds = store.get()
+    sj = _subject(subject)
+    titles = ds.textbooks.set_index("textbook_id")["title"].to_dict()
+    tt = pd.DataFrame(topics_mod.topic_table(ds, sj))
+    topics_df = tt[["order", "topic_id", "section", "name", "mean_pct", "mastered_share", "status", "planned_hours",
+                    "actual_hours", "class_spread", "n_students"]].rename(columns={
+        "order": "№", "topic_id": "ID", "section": "Раздел", "name": "Тема", "mean_pct": "Средний балл, %",
+        "mastered_share": "Усвоили, %", "status": "Статус", "planned_hours": "Часы (план)",
+        "actual_hours": "Часы (факт, среднее)", "class_spread": "Разброс по классам, п.п.", "n_students": "Учеников"})
+    hr = hours_mod.optimize(ds, sj)
+    hours_df = pd.DataFrame([dict(ID=x["topic_id"], Тема=x["name"], **{
+        "План, ч": x["planned"], "Рекомендация, ч": x["recommended"], "Изменение, ч": x["delta"],
+        "Отдача, п.п./ч": x["marginal_pp_per_hour"], "Прогноз (план), %": x["predicted_plan"],
+        "Прогноз (рекомендация), %": x["predicted_rec"], "Причины": ", ".join(x["reasons"])}) for x in hr["topics"]])
+    tb = textbooks_mod.compare(ds, sj)
+    tb_rows = []
+    for s in tb["sections"]:
+        for b in tb["textbooks"]:
+            a = s["adjusted"][b]
+            tb_rows.append({"Раздел": s["name"], "Учебник": titles.get(b, b), "Сырой средний, %": s["naive"][b]["mean"],
+                            "Скорректированный, %": a["mean"], f"Эффект vs {titles.get(tb['reference'])}, п.п.": a["effect_vs_ref"],
+                            "ДИ нижн.": a["ci"][0], "ДИ верхн.": a["ci"][1], "p": a["p"], "Лучший": "да" if s["best"] == b else ""})
+    va = schools_mod.value_added(ds, sj)
+    schools_df = pd.DataFrame([{"Место": s["rank"], "Школа": s["name"], "Район": s["district"], "Местность": s["locality"],
+                                "Язык": s["language"], "Учебник": titles.get(s["textbook_id"]), "Учеников": s["n_students"],
+                                "Факт, %": s["actual"], "Ожидалось, %": s["expected"], "Добавленная ценность, п.п.": s["value_added"],
+                                "Категория": s["category"], "Слабые темы": ", ".join(w["name"] for w in s["weak_topics"])}
+                               for s in va["schools"]])
+    items_df = pd.DataFrame([{"Задание": x["item_id"], "Тема": x["topic_name"], "Решаемость": x["p_value"],
+                              "Различающая способность": x["discrimination"], "Проблемы": "; ".join(x["flag_labels"]),
+                              "Рекомендация": x["suggestion"] or "", "Исключено": "да" if x["critical"] else ""}
+                             for x in items_mod.audit(ds, sj)["items"]])
+    findings_df = pd.DataFrame([{"Важность": i["severity"], "Вывод": i["title_ru"], "Описание": i["text_ru"]}
+                                for i in insights_mod.build(ds, sj)])
+    buf = io.BytesIO()
+    with pd.ExcelWriter(buf, engine="openpyxl") as xw:
+        for name, df in [("Выводы", findings_df), ("Темы", topics_df), ("Часы", hours_df), ("Учебники", pd.DataFrame(tb_rows)),
+                         ("Школы", schools_df), ("Задания", items_df)]:
+            df.to_excel(xw, sheet_name=name, index=False)
+            ws = xw.sheets[name]
+            for col in ws.columns:
+                width = max(len(str(c.value or "")) for c in col[:200])
+                ws.column_dimensions[col[0].column_letter].width = min(max(10, width + 2), 70)
+            ws.freeze_panes = "A2"
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                             headers={"Content-Disposition": f"attachment; filename=ddc_{sj}.xlsx"})
+
+
 # ---------------------------------------------------------------- data management
 @app.get("/api/data/schema")
 def data_schema():
@@ -280,11 +339,6 @@ def _warmup():
 
 def _warmup_async():
     threading.Thread(target=_warmup, daemon=True).start()
-
-
-@app.on_event("startup")
-def _startup():
-    _warmup_async()
 
 
 if FRONTEND_DIST.exists():
