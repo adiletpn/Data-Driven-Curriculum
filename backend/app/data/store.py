@@ -219,6 +219,26 @@ def validate(tables: dict[str, pd.DataFrame]) -> dict:
     if len(few):
         warnings.append(f"{len(few)} тем имеют меньше 3 заданий — оценка усвоения по ним ненадёжна")
 
+    # enough data for the statistics to be meaningful?
+    if not errors:
+        rr = r.merge(tables["items"][["item_id", "topic_id"]], on="item_id").merge(
+            tables["topics"][["topic_id", "subject_id"]], on="topic_id")
+        for sj, g in rr.groupby("subject_id"):
+            n_stu = g["student_id"].nunique()
+            n_cls = g["class_id"].nunique()
+            n_top = g["topic_id"].nunique()
+            if n_stu < 30 or n_cls < 3:
+                errors.append(f"Предмет {sj}: слишком мало данных для анализа ({n_stu} учеников, {n_cls} классов). "
+                              f"Нужно минимум 30 учеников и 3 класса с ответами.")
+            elif n_top < 2:
+                errors.append(f"Предмет {sj}: ответы есть только по {n_top} теме — нужно минимум 2 темы.")
+            else:
+                n_sch = tables["classes"].loc[tables["classes"]["class_id"].isin(g["class_id"]), "school_id"].nunique()
+                if n_sch < 10:
+                    warnings.append(f"Предмет {sj}: всего {n_sch} школ — сравнение учебников и школ будет неточным")
+        if r["item_id"].isin(tables["items"]["item_id"]).sum() == 0:
+            errors.append("Ни один ответ не относится к заданиям из «items»")
+
     stats = {name: int(len(df)) for name, df in tables.items()}
     return {"ok": not errors, "errors": errors, "warnings": warnings, "stats": stats}
 
