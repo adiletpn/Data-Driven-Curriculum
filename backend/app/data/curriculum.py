@@ -70,7 +70,7 @@ TOPICS = [
          hours=8, prereqs=["A11"], b=1.9, L=3.4, tau=16.0, rho={"A11": 0.6}),         # HARD, underfunded
     dict(id="A13", s="ALG7", section="Алгебраические дроби", section_kz="Алгебралық бөлшектер",
          name="Преобразование рациональных выражений", name_kz="Рационал өрнектерді түрлендіру",
-         hours=6, prereqs=["A12"], b=0.8, L=1.3, tau=7.0, rho={"A12": 0.5}),
+         hours=6, prereqs=["A12"], b=1.0, L=0.8, tau=1.5, rho={"A12": 0.75}),  # WEAK but saturated: root cause is A12, hours do not help
     dict(id="A14", s="ALG7", section="Функции", section_kz="Функциялар",
          name="Понятие функции и способы задания", name_kz="Функция ұғымы және берілу тәсілдері",
          hours=5, prereqs=[], b=-0.5, L=1.0, tau=2.0, rho={}),
@@ -98,7 +98,7 @@ TOPICS = [
          hours=8, prereqs=["G03"], b=1.65, L=3.0, tau=12.0, rho={"G03": 0.6}),          # HARD
     dict(id="G05", s="GEO7", section="Параллельные прямые", section_kz="Параллель түзулер",
          name="Свойства параллельных прямых", name_kz="Параллель түзулердің қасиеттері",
-         hours=6, prereqs=["G04"], b=0.4, L=1.2, tau=5.0, rho={"G04": 0.55}),
+         hours=6, prereqs=["G04"], b=0.75, L=0.8, tau=1.5, rho={"G04": 0.75}),  # WEAK but saturated: root cause is G04
     dict(id="G06", s="GEO7", section="Треугольники", section_kz="Үшбұрыштар",
          name="Треугольник и его элементы", name_kz="Үшбұрыш және оның элементтері",
          hours=5, prereqs=["G02"], b=-0.5, L=1.0, tau=2.0, rho={"G02": 0.4}),
