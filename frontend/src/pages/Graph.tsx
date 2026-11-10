@@ -6,7 +6,7 @@ import { useApp } from "../lib/app";
 import { fmt, signed } from "../lib/i18n";
 import type { Edge, GraphData } from "../lib/types";
 
-const NW = 196, NH = 58, CG = 64, RG = 26, PAD = 24, HEAD = 34;
+const NW = 186, NH = 58, CG = 52, RG = 22, PAD = 20, HEAD = 34;
 
 function wrap(s: string, n = 26): string[] {
   const words = s.split(" ");
@@ -78,10 +78,10 @@ export default function Graph() {
           </span>
         </div>
         <div className="overflow-x-auto">
-          <svg width={layout.w} height={layout.h} className="mx-auto block">
+          <svg viewBox={`0 0 ${layout.w} ${layout.h}`} width="100%" style={{ minWidth: 880, maxWidth: layout.w }} className="mx-auto block">
             <defs>
               {["#0f766e", "#5eada4", "#cbd5e1", "#c2410c"].map((c) => (
-                <marker key={c} id={`arr${c.slice(1)}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <marker key={c} id={`arr${c.slice(1)}`} viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
                   <path d="M0,0 L10,5 L0,10 z" fill={c} />
                 </marker>
               ))}
