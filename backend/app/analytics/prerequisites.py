@@ -113,7 +113,9 @@ def analyze(ds, subject_id: str) -> dict:
 
         for e in others:
             e["kind"] = "indirect" if reachable(e["prereq_id"], e["topic_id"]) else "unexpected"
-        hidden = sorted([e for e in others if e["strength"] == "strong"], key=lambda e: (e["kind"] != "unexpected", -e["excess"]))
+        # undeclared links need stronger evidence (many pairs are scanned -> multiple-comparison risk)
+        hidden = sorted([e for e in others if (e["excess"] or 0) >= STRONG * 1.5],
+                        key=lambda e: (e["kind"] != "unexpected", -e["excess"]))
 
         # root causes: weak topic whose strong prerequisite is also weak
         root_causes = []
