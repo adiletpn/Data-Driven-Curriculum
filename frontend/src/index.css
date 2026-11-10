@@ -30,6 +30,12 @@ body {
   font-feature-settings: "cv11", "ss01";
 }
 
+/* grid/flex children must be allowed to shrink below their content width (tables, charts) */
+.grid > *,
+main > * {
+  min-width: 0;
+}
+
 .card {
   background: #fff;
   border: 1px solid var(--color-line);

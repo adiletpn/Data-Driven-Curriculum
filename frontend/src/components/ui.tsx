@@ -22,7 +22,7 @@ export function Card({ title, sub, right, children, className, pad = true }: {
           {right}
         </header>
       )}
-      <div className={pad ? "p-5" : ""}>{children}</div>
+      <div className={pad ? "p-5" : "overflow-x-auto"}>{children}</div>
     </section>
   );
 }
@@ -31,7 +31,7 @@ export function PageHeader({ title, sub, right }: { title: string; sub?: string;
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">{title}</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-ink md:text-2xl">{title}</h1>
         {sub && <p className="mt-1 max-w-3xl text-[14px] text-muted">{sub}</p>}
       </div>
       {right}
