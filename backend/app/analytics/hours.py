@@ -92,18 +92,32 @@ def _estimate(c: pd.DataFrame, topics: pd.DataFrame, prior: dict | None = None):
         w = d["n"].to_numpy(float)
         level = float(np.average(y_adj, weights=w) + b * (math.log(t["planned_hours"]) - np.average(d["lnh"], weights=w)))
         est[t["topic_id"]] = dict(beta_raw=b, se=se, n_classes=len(d), level=level, y_adj=y_adj, d=d)
-    vals = [(v["beta_raw"], v["se"]) for v in est.values() if np.isfinite(v["beta_raw"]) and np.isfinite(v["se"])]
-    if vals:
-        bs, ses = np.array(vals).T
-        mean_b = float(np.average(bs, weights=1 / np.maximum(ses, 1e-4) ** 2))
-        tau2 = max(float(np.var(bs) - np.mean(ses ** 2)), 1e-4)
+    # Empirical Bayes with a covariate-informed prior: the expected slope depends on how far the topic is
+    # from mastery (topics near the ceiling cannot gain much). centre_t = a + b * (1 - level_t)
+    ok = [(k, v) for k, v in est.items() if np.isfinite(v["beta_raw"]) and np.isfinite(v["se"])]
+    centres = {}
+    if len(ok) >= 4:
+        bs = np.array([v["beta_raw"] for _, v in ok])
+        ses = np.array([v["se"] for _, v in ok])
+        gap = np.array([1 - v["level"] for _, v in ok])
+        w = 1 / np.maximum(ses, 1e-4) ** 2
+        Z = np.column_stack([np.ones(len(bs)), gap])
+        coef = np.linalg.lstsq(Z * np.sqrt(w)[:, None], bs * np.sqrt(w), rcond=None)[0]
+        fitted = Z @ coef
+        tau2 = max(float(np.var(bs - fitted) - np.mean(ses ** 2)), 1e-4)
+        for (k, v), f in zip(ok, fitted):
+            centres[k] = float(f)
+        mean_b = float(np.average(bs, weights=w))
+    elif ok:
+        bs = np.array([v["beta_raw"] for _, v in ok])
+        mean_b, tau2 = float(bs.mean()), 1e-4
     else:
         mean_b, tau2 = 0.0, 1e-4
     for tid, v in est.items():
         if prior and tid in prior and np.isfinite(prior[tid]):
             centre, tau2_ = prior[tid], max(tau2 / 2, 1e-4)  # subgroup: shrink towards the full-sample slope
         else:
-            centre, tau2_ = mean_b, tau2
+            centre, tau2_ = centres.get(tid, mean_b), tau2
         if np.isfinite(v["beta_raw"]) and np.isfinite(v["se"]):
             k = tau2_ / (tau2_ + v["se"] ** 2)
             v["beta"] = max(k * v["beta_raw"] + (1 - k) * centre, 0.0)
