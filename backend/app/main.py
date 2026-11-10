@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
@@ -25,6 +25,7 @@ from .analytics import topics as topics_mod
 from .analytics import validation as validation_mod
 from .data.store import SCHEMA, TABLE_DESCRIPTIONS, store
 from .report import build_report
+from .auth import ANY, REGION, login as auth_login, require
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -89,7 +90,7 @@ def health():
 
 
 @app.get("/api/meta")
-def meta():
+def meta(user: dict = Depends(require(*ANY))):
     ds = store.get()
     items_mod.apply_exclusions(ds)
     subj = ds.subjects.copy()
@@ -109,9 +110,54 @@ def meta():
     ))
 
 
+# ---------------------------------------------------------------- auth
+class Login(BaseModel):
+    username: str
+    password: str
+
+
+@app.post("/api/auth/login")
+def auth_login_endpoint(body: Login):
+    res = auth_login(body.username, body.password)
+    if not res:
+        raise HTTPException(401, "Неверный логин или пароль")
+    return res
+
+
+@app.get("/api/auth/me")
+def auth_me(user: dict = Depends(require(*ANY))):
+    return user
+
+
+@app.get("/api/school/{school_id}")
+def school_profile(school_id: str, subject: str | None = None, user: dict = Depends(require(*ANY))):
+    """School card: value-added, topics vs region, weak topics. Directors may only open their own school."""
+    if user["role"] == "director" and user["school_id"] != school_id:
+        raise HTTPException(403, "Директор видит только свою школу")
+    ds = store.get()
+    sj = _subject(subject)
+    va = schools_mod.value_added(ds, sj)
+    row = next((s for s in va["schools"] if s["school_id"] == school_id), None)
+    if row is None:
+        raise HTTPException(404, "Школа не найдена")
+    region = {t["topic_id"]: t for t in topics_mod.topic_table(ds, sj)}
+    mine = topics_mod.topic_table(ds, sj, {"school_id": school_id})
+    topics_cmp = [dict(topic_id=t["topic_id"], name=t["name"], name_kz=t["name_kz"], section=t["section"],
+                       section_kz=t["section_kz"], school=t["mean_pct"], school_mastered=t["mastered_share"],
+                       region=region[t["topic_id"]]["mean_pct"], gap=round(t["mean_pct"] - region[t["topic_id"]]["mean_pct"], 1),
+                       status=t["status"], n_students=t["n_students"]) for t in mine]
+    hrs = hours_mod.optimize(ds, sj, filters={"textbook_id": row["textbook_id"]})
+    titles = ds.textbooks.set_index("textbook_id")["title"].to_dict()
+    n_total = len(va["schools"])
+    return ok(dict(school=row, n_schools=n_total, percentile=round(100 * (n_total - row["rank"]) / max(n_total - 1, 1)),
+                   textbook_title=titles.get(row["textbook_id"], row["textbook_id"]), topics=topics_cmp,
+                   hours=[dict(topic_id=x["topic_id"], name=x["name"], name_kz=x["name_kz"], planned=x["planned"],
+                               recommended=x["recommended"], delta=x["delta"]) for x in hrs["topics"] if x["delta"]]))
+
+
 # ---------------------------------------------------------------- analytics
 @app.get("/api/overview")
-def overview(subject: str | None = None):
+def overview(subject: str | None = None, user: dict = Depends(require(*REGION))):
     ds = store.get()
     sj = _subject(subject)
     return ok(dict(summary=topics_mod.subject_overview(ds, sj), sections=topics_mod.section_table(ds, sj),
@@ -120,14 +166,19 @@ def overview(subject: str | None = None):
 
 @app.get("/api/topics")
 def topics(subject: str | None = None, locality: str | None = None, language: str | None = None,
-           textbook_id: str | None = None):
+           textbook_id: str | None = None, school_id: str | None = None, user: dict = Depends(require(*ANY))):
     ds = store.get()
     sj = _subject(subject)
-    return ok(topics_mod.topic_table(ds, sj, _filters(locality, language, textbook_id)))
+    f = _filters(locality, language, textbook_id)
+    if user["role"] == "director":
+        school_id = user["school_id"]
+    if school_id:
+        f["school_id"] = school_id
+    return ok(topics_mod.topic_table(ds, sj, f))
 
 
 @app.get("/api/topics/{topic_id}")
-def topic_detail(topic_id: str):
+def topic_detail(topic_id: str, user: dict = Depends(require(*ANY))):
     ds = store.get()
     t = ds.topics[ds.topics["topic_id"] == topic_id]
     if t.empty:
@@ -150,19 +201,19 @@ def topic_detail(topic_id: str):
 
 
 @app.get("/api/graph")
-def graph(subject: str | None = None):
+def graph(subject: str | None = None, user: dict = Depends(require(*ANY))):
     return ok(prereq_mod.analyze(store.get(), _subject(subject)))
 
 
 @app.get("/api/textbooks")
-def textbooks(subject: str | None = None):
+def textbooks(subject: str | None = None, user: dict = Depends(require(*REGION))):
     return ok(textbooks_mod.compare(store.get(), _subject(subject)))
 
 
 @app.get("/api/hours")
 def hours(subject: str | None = None, mode: str = "balanced", flex: float = Query(0.3, ge=0.05, le=0.6),
           total: int | None = None, locality: str | None = None, language: str | None = None,
-          textbook_id: str | None = None):
+          textbook_id: str | None = None, user: dict = Depends(require(*REGION))):
     return ok(hours_mod.optimize(store.get(), _subject(subject), mode=mode, flex=flex, total=total,
                                  filters=_filters(locality, language, textbook_id)))
 
@@ -176,33 +227,33 @@ class WhatIf(BaseModel):
 
 
 @app.post("/api/hours/whatif")
-def whatif(body: WhatIf):
+def whatif(body: WhatIf, user: dict = Depends(require(*REGION))):
     return ok(hours_mod.optimize(store.get(), _subject(body.subject), custom=body.hours,
                                  filters=_filters(body.locality, body.language, body.textbook_id)))
 
 
 @app.get("/api/quality")
-def quality(subject: str | None = None):
+def quality(subject: str | None = None, user: dict = Depends(require(*ANY))):
     return ok(items_mod.audit(store.get(), _subject(subject)))
 
 
 @app.get("/api/schools")
-def schools(subject: str | None = None):
+def schools(subject: str | None = None, user: dict = Depends(require(*REGION))):
     return ok(schools_mod.value_added(store.get(), _subject(subject)))
 
 
 @app.get("/api/equity")
-def equity(subject: str | None = None):
+def equity(subject: str | None = None, user: dict = Depends(require(*REGION))):
     return ok(schools_mod.equity(store.get(), _subject(subject)))
 
 
 @app.get("/api/insights")
-def insights(subject: str | None = None):
+def insights(subject: str | None = None, user: dict = Depends(require(*REGION))):
     return ok(insights_mod.build(store.get(), _subject(subject)))
 
 
 @app.get("/api/validation")
-def validation():
+def validation(user: dict = Depends(require(*REGION))):
     v = validation_mod.run(store.get())
     if v is None:
         raise HTTPException(404, "Ground truth is only available for the synthetic dataset")
@@ -210,12 +261,12 @@ def validation():
 
 
 @app.get("/api/report")
-def report(subject: str | None = None, lang: str = "ru"):
+def report(subject: str | None = None, lang: str = "ru", user: dict = Depends(require(*REGION))):
     return ok(build_report(store.get(), _subject(subject), lang))
 
 
 @app.get("/api/export.xlsx")
-def export_xlsx(subject: str | None = None):
+def export_xlsx(subject: str | None = None, user: dict = Depends(require(*REGION))):
     """All recommendations as an Excel workbook (methodologists live in Excel)."""
     ds = store.get()
     sj = _subject(subject)
@@ -268,7 +319,7 @@ def export_xlsx(subject: str | None = None):
 
 # ---------------------------------------------------------------- data management
 @app.get("/api/data/schema")
-def data_schema():
+def data_schema(user: dict = Depends(require(*ANY))):
     return ok([dict(table=k, required=v["required"], optional=v["optional"], description=TABLE_DESCRIPTIONS[k])
                for k, v in SCHEMA.items()])
 
@@ -277,7 +328,7 @@ _TEMPLATE_CACHE: dict[str, bytes] = {}
 
 
 @app.get("/api/data/template.zip")
-def data_template():
+def data_template(user: dict = Depends(require(*ANY))):
     """A small but complete, analysable dataset (8 schools) in the upload format — fill in or upload as is."""
     if "zip" not in _TEMPLATE_CACHE:
         import tempfile
@@ -297,7 +348,7 @@ def data_template():
 
 
 @app.post("/api/data/upload")
-async def data_upload(files: list[UploadFile] = File(...)):
+async def data_upload(files: list[UploadFile] = File(...), user: dict = Depends(require(*("admin",)))):
     payload = [(f.filename or "file", await f.read()) for f in files]
     report = store.replace_with_upload(payload)
     if report["ok"]:
@@ -311,7 +362,7 @@ class Reset(BaseModel):
 
 
 @app.post("/api/data/reset")
-def data_reset(body: Reset):
+def data_reset(body: Reset, user: dict = Depends(require(*("admin",)))):
     report = store.reset_synthetic(seed=body.seed, n_schools=body.n_schools)
     _warmup_async()
     return ok(report)
@@ -326,13 +377,13 @@ class Ask(BaseModel):
 
 
 @app.post("/api/ai/ask")
-def ai_ask(body: Ask):
+def ai_ask(body: Ask, user: dict = Depends(require(*REGION))):
     from .ai import answer
     return ok(answer(store.get(), _subject(body.subject), body.question, body.lang, body.history))
 
 
 @app.get("/api/ai/status")
-def ai_status():
+def ai_status(user: dict = Depends(require(*ANY))):
     from .ai import available
     return ok({"available": available()})
 
