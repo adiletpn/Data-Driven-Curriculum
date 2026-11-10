@@ -84,7 +84,7 @@ def _expected_topic_pct(sim, items_by_topic, skills):
     return out
 
 
-def generate(out_dir: str | Path, seed: int = 42, n_schools: int = 60) -> dict:
+def generate(out_dir: str | Path, seed: int = 42, n_schools: int = 80) -> dict:
     rng = np.random.default_rng(seed)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -92,10 +92,10 @@ def generate(out_dir: str | Path, seed: int = 42, n_schools: int = 60) -> dict:
     # ---------------- schools ----------------
     schools = []
     for k in range(n_schools):
-        district = C.DISTRICTS[0] if k < 14 else C.DISTRICTS[1 + (k % (len(C.DISTRICTS) - 1))]
+        district = C.DISTRICTS[0] if k < 18 else C.DISTRICTS[1 + (k % (len(C.DISTRICTS) - 1))]
         urban = district == "г. Тараз" or rng.random() < 0.2
         lang = "kz" if rng.random() < 0.62 else "ru"
-        eff = rng.normal(0, 0.3) + (0.0 if urban else -0.35)
+        eff = rng.normal(0, 0.35) + (0.0 if urban else -0.5)
         schools.append(dict(school_id=f"S{k + 1:03d}", name=f"Школа №{k + 1}", district=district,
                             locality="urban" if urban else "rural", language=lang, _eff=eff))
     sch = pd.DataFrame(schools)
@@ -148,7 +148,7 @@ def generate(out_dir: str | Path, seed: int = 42, n_schools: int = 60) -> dict:
         cls_hours = {}
         for cid in cls_df.index:
             for t in topics:
-                h = int(max(2, round(t["hours"] * rng.uniform(0.65, 1.35))))
+                h = int(max(2, round(t["hours"] * rng.uniform(0.6, 1.4))))
                 cls_hours[(cid, t["id"])] = h
                 hours_rows.append(dict(class_id=cid, topic_id=t["id"], hours=h))
 
