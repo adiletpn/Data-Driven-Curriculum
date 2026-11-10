@@ -123,21 +123,21 @@ TOPICS = [
 TEXTBOOK_SECTION_EFFECTS = {
     "ALG-A": {},
     "ALG-B": {"Формулы сокращённого умножения": 0.25, "Алгебраические дроби": 0.30,
-              "Одночлены и многочлены": 0.15, "_default": 0.08},
+              "Одночлены и многочлены": 0.15, "_default": 0.0},
     "ALG-C": {"Функции": 0.35, "Алгебраические дроби": -0.30, "_default": 0.0},
     "GEO-A": {},
-    "GEO-B": {"Треугольники": 0.30, "Параллельные прямые": 0.15, "Окружность": -0.15, "_default": 0.0},
+    "GEO-B": {"Треугольники": 0.28, "Параллельные прямые": 0.10, "Окружность": -0.20, "_default": 0.0},
 }
 
 # Truth: Kazakh-language edition of 'Альфа' books has a weak translation.
-TEXTBOOK_LANGUAGE_INTERACTION = {("ALG-A", "kz"): -0.30, ("GEO-A", "kz"): -0.25}
+TEXTBOOK_LANGUAGE_INTERACTION = {("ALG-A", "kz"): -0.30}
 
 # Truth: probability that a school picks each textbook depends on how strong
 # and how urban the school is -> naive comparison is confounded (Simpson).
 TEXTBOOK_CHOICE = {
-    "ALG7": {"urban_strong": [0.70, 0.15, 0.15], "urban_weak": [0.40, 0.35, 0.25],
-             "rural": [0.15, 0.60, 0.25]},
-    "GEO7": {"urban_strong": [0.75, 0.25], "urban_weak": [0.5, 0.5], "rural": [0.25, 0.75]},
+    "ALG7": {"urban_strong": [0.85, 0.05, 0.10], "urban_weak": [0.30, 0.45, 0.25],
+             "rural": [0.08, 0.72, 0.20]},
+    "GEO7": {"urban_strong": [0.88, 0.12], "urban_weak": [0.45, 0.55], "rural": [0.12, 0.88]},
 }
 
 # Truth: defective test items.
