@@ -17,6 +17,16 @@ def _f(x, nd=1):
     return f"{x:.{nd}f}".replace(".", ",")
 
 
+def _plural(n: int, one: str, few: str, many: str) -> str:
+    """Russian plural form: 1 тема, 2 темы, 5 тем."""
+    n = abs(int(n))
+    if n % 10 == 1 and n % 100 != 11:
+        return one
+    if 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14:
+        return few
+    return many
+
+
 def _tb_title(ds, tb):
     t = ds.textbooks.set_index("textbook_id")
     return t.loc[tb, "title"] if tb in t.index else tb
@@ -40,9 +50,9 @@ def build(ds, subject_id: str) -> list[dict]:
             names_kz = ", ".join(f"«{t['name_kz']}» ({_f(t['mastered_share'], 0)}%)" for t in crit[:3])
             n_students = sum(t["not_mastered_students"] for t in crit)
             add(id="critical_topics", category="topics", severity="critical", link="/topics",
-                title_ru=f"{len(crit)} тем(ы) в критической зоне",
+                title_ru=f"{len(crit)} {_plural(len(crit), 'тема', 'темы', 'тем')} в критической зоне",
                 title_kz=f"{len(crit)} тақырып сыни аймақта",
-                text_ru=f"Меньше половины учеников усвоили: {names}. Это {n_students} случаев неусвоения.",
+                text_ru=f"Меньше половины учеников усвоили: {names}. Это {n_students} {_plural(n_students, 'случай', 'случая', 'случаев')} неусвоения.",
                 text_kz=f"Оқушылардың жартысынан азы меңгерген: {names_kz}. Барлығы {n_students} меңгермеу жағдайы.",
                 evidence=[dict(topic_id=t["topic_id"], mastered_share=t["mastered_share"], ci=t["ci"]) for t in crit])
 
@@ -209,9 +219,9 @@ def build(ds, subject_id: str) -> list[dict]:
         if bad:
             wk = [x for x in bad if "wrong_key" in x["flags"]]
             add(id="bad_items", category="quality", severity="warning", link="/quality",
-                title_ru=f"{len(bad)} дефектных заданий исключены из анализа",
+                title_ru=f"{len(bad)} {_plural(len(bad), 'дефектное задание исключено', 'дефектных задания исключены', 'дефектных заданий исключены')} из анализа",
                 title_kz=f"{len(bad)} ақаулы тапсырма талдаудан алынып тасталды",
-                text_ru=(f"Из них {len(wk)} с вероятно неверным ключом ({', '.join(x['item_id'] for x in wk) or '—'}). "
+                text_ru=(f"Из них {len(wk)} — с вероятно неверным ключом ({', '.join(x['item_id'] for x in wk) or '—'}). "
                          "Без этой проверки сложность тем была бы искажена."),
                 text_kz=(f"Оның ішінде {len(wk)} тапсырманың жауап кілті қате болуы мүмкін ({', '.join(x['item_id'] for x in wk) or '—'}). "
                          "Бұл тексеріссіз тақырыптардың күрделілігі бұрмаланар еді."),
@@ -233,7 +243,7 @@ def build(ds, subject_id: str) -> list[dict]:
             below = [s for s in va["schools"] if s["category"] == "below"][-3:]
             above = [s for s in va["schools"] if s["category"] == "above"][:3]
             add(id="schools_support", category="schools", severity="warning", link="/schools",
-                title_ru=f"{va['n_below']} школ работают ниже ожидаемого уровня",
+                title_ru=f"{va['n_below']} {_plural(va['n_below'], 'школа работает', 'школы работают', 'школ работают')} ниже ожидаемого уровня",
                 title_kz=f"{va['n_below']} мектеп күтілген деңгейден төмен",
                 text_ru=("С учётом контингента учеников, учебника и типа школы. Приоритет методической поддержки: " +
                          ", ".join(s["name"] for s in below) + ". Перенимать опыт: " + ", ".join(s["name"] for s in above) + "."),
@@ -244,7 +254,7 @@ def build(ds, subject_id: str) -> list[dict]:
                 add(id="ranking_shift", category="schools", severity="info", link="/schools",
                     title_ru="Честный рейтинг школ отличается от рейтинга по среднему баллу",
                     title_kz="Мектептердің әділ рейтингі орташа балл рейтингінен өзгеше",
-                    text_ru=f"{va['rank_shifts']} школ сдвигаются более чем на четверть списка, если учесть стартовый уровень учеников.",
+                    text_ru=f"{va['rank_shifts']} {_plural(va['rank_shifts'], 'школа сдвигается', 'школы сдвигаются', 'школ сдвигаются')} более чем на четверть списка, если учесть стартовый уровень учеников.",
                     text_kz=f"Оқушылардың бастапқы деңгейі ескерілсе, {va['rank_shifts']} мектеп тізімнің төрттен бірінен астам орынға жылжиды.",
                     evidence=va["rank_shifts"])
 
