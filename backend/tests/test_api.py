@@ -45,3 +45,29 @@ def test_upload_rejects_incomplete_dataset(client):
 def test_excel_export(client):
     r = client.get("/api/export.xlsx?subject=ALG7")
     assert r.status_code == 200 and r.content[:2] == b"PK"
+
+
+def test_template_is_a_valid_analysable_dataset(client, tmp_path):
+    import io
+    import zipfile
+    r = client.get("/api/data/template.zip")
+    assert r.status_code == 200
+    names = set(zipfile.ZipFile(io.BytesIO(r.content)).namelist())
+    assert {"responses.csv", "items.csv", "topics.csv"} <= names
+
+
+def test_tiny_dataset_is_rejected_with_explanation(client):
+    import io
+    import zipfile
+    src = client.get("/api/data/template.zip").content
+    zin = zipfile.ZipFile(io.BytesIO(src))
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w") as z:
+        for n in zin.namelist():
+            data = zin.read(n)
+            if n == "responses.csv":
+                data = b"\n".join(data.split(b"\n")[:40])
+            z.writestr(n, data)
+    r = client.post("/api/data/upload", files=[("files", ("tiny.zip", out.getvalue(), "application/zip"))])
+    body = r.json()
+    assert body["ok"] is False and any("мало данных" in e for e in body["errors"])
