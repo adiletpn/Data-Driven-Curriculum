@@ -1,5 +1,6 @@
 import { ArrowDownRight, ArrowUpRight, Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, cx, EffectBar, ErrorBox, Kpi, Loading, Note, PageHeader, Segmented, Tag } from "../components/ui";
 import { useApi } from "../lib/api";
 import { useApp } from "../lib/app";
@@ -10,6 +11,7 @@ export default function Schools() {
   const { t, subject, tbTitle } = useApp();
   const { data, error, loading } = useApi<SchoolsData>(subject ? `/api/schools?subject=${subject}` : null);
   const [q, setQ] = useState("");
+  const nav = useNavigate();
   const [cat, setCat] = useState<"all" | "below" | "above">("all");
   const rows = useMemo(() => (data?.schools ?? []).filter((s) =>
     (cat === "all" || s.category === cat) && (!q || `${s.name} ${s.district}`.toLowerCase().includes(q.toLowerCase()))), [data, q, cat]);
@@ -60,7 +62,7 @@ export default function Schools() {
                 {rows.map((s) => {
                   const shift = s.naive_rank - s.rank;
                   return (
-                    <tr key={s.school_id}>
+                    <tr key={s.school_id} className="cursor-pointer" onClick={() => nav(`/school?id=${s.school_id}`)}>
                       <td className="num">
                         <b>{s.rank}</b>
                         {Math.abs(shift) >= 10 && (
