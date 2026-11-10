@@ -24,10 +24,10 @@ export default function Schools() {
         <Kpi label={t("sc_support")} value={data.n_below} tone="bad" note={t("sc_below")} />
         <Kpi label={t("sc_best")} value={data.n_above} tone="good" note={t("sc_above")} />
         <Kpi label={t("sc_typical")} value={data.schools.length - data.n_above - data.n_below} />
-        <Kpi label={t("sc_naive_rank")} value={data.rank_shifts} tone="warn" note={`${t("schools")} ≠ ${t("sc_fair_rank").toLowerCase()}`} />
+        <Kpi label={t("sc_shifted")} value={data.rank_shifts} tone="warn" note={t("sc_shifted_note")} />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
+      <div className="space-y-6">
         <Card pad={false}
           right={
             <div className="flex flex-wrap items-center gap-2">
@@ -47,10 +47,12 @@ export default function Schools() {
                 <tr>
                   <th className="num">{t("sc_fair_rank")}</th>
                   <th>{t("school")}</th>
+                  <th>{t("locality")}</th>
+                  <th>{t("textbook")}</th>
                   <th className="num">{t("sc_actual")}</th>
                   <th className="num">{t("sc_expected")}</th>
                   <th className="num">{t("sc_va")}</th>
-                  <th style={{ width: 150 }}></th>
+                  <th style={{ minWidth: 160 }}></th>
                   <th>{t("sc_weak")}</th>
                 </tr>
               </thead>
@@ -67,17 +69,19 @@ export default function Schools() {
                           </span>
                         )}
                       </td>
-                      <td>
+                      <td className="whitespace-nowrap">
                         <div className="font-medium">{s.name}</div>
-                        <div className="text-[11.5px] text-muted">{s.district} · {t(s.locality as any)} · {t(s.language === "kz" ? "kz_short" : "ru_short")} · {tbTitle(s.textbook_id)} · {s.n_students} {t("students")}</div>
+                        <div className="text-[11.5px] text-muted">{s.district} · {s.n_students} {t("students")}</div>
                       </td>
+                      <td className="whitespace-nowrap"><Tag>{t(s.locality as any)}</Tag> <Tag>{t(s.language === "kz" ? "kz_short" : "ru_short")}</Tag></td>
+                      <td className="whitespace-nowrap text-[12.5px] text-slate-600">{tbTitle(s.textbook_id)}</td>
                       <td className="num">{fmt(s.actual)}%</td>
                       <td className="num text-muted">{fmt(s.expected)}%</td>
                       <td className={cx("num font-semibold", s.category === "above" ? "text-good" : s.category === "below" ? "text-bad" : "")}>{signed(s.value_added)}</td>
-                      <td><EffectBar est={s.value_added} ci={s.ci} range={range} /></td>
-                      <td>
-                        <div className="flex flex-wrap gap-1">
-                          {s.weak_topics.slice(0, 2).map((w) => <Tag key={w.topic_id} tone="warn">{w.name.length > 28 ? w.name.slice(0, 27) + "…" : w.name}</Tag>)}
+                      <td><div style={{ width: 150 }}><EffectBar est={s.value_added} ci={s.ci} range={range} /></div></td>
+                      <td className="min-w-[220px] max-w-[280px]">
+                        <div className="line-clamp-2 text-[12px] leading-snug text-warn">
+                          {s.weak_topics.slice(0, 2).map((w) => `${w.name} (${signed(w.gap, 0)})`).join(" · ") || "—"}
                         </div>
                       </td>
                     </tr>
@@ -88,7 +92,7 @@ export default function Schools() {
           </div>
         </Card>
 
-        <div className="space-y-6">
+        <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
           <Card title={t("sc_districts")} pad={false}>
             <table className="tbl">
               <thead><tr><th>{t("district")}</th><th className="num">{t("sc_va")}</th><th className="num">{t("schools")}</th></tr></thead>
@@ -103,9 +107,7 @@ export default function Schools() {
               </tbody>
             </table>
           </Card>
-          <Note>
-            {t("sc_sub")}. {t("sc_naive_rank")} → {t("sc_fair_rank")}: ↑↓.
-          </Note>
+          <div className="self-start"><Note>{t("sc_how")}</Note></div>
         </div>
       </div>
     </div>
