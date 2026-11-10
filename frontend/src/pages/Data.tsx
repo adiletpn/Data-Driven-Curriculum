@@ -84,12 +84,9 @@ export default function DataPage() {
 
         <Card title={t("dt_integrations")}>
           <ul className="space-y-3 text-[13px] text-slate-700">
-            {[
-              ["Kundelik / электронный журнал", "фактические часы по темам, классы, ученики"],
-              ["МОДО / внутришкольный мониторинг", "результаты тестов по заданиям"],
-              ["Входная диагностика", "baseline_score для честного сравнения"],
-              ["НОБД", "школы: район, город/село, язык обучения"],
-            ].map(([a, b]) => (
+            {([
+              ["dt_src1", "dt_src1d"], ["dt_src2", "dt_src2d"], ["dt_src3", "dt_src3d"], ["dt_src4", "dt_src4d"],
+            ] as const).map(([ka, kb]) => [t(ka), t(kb)]).map(([a, b]) => (
               <li key={a} className="rounded-lg border border-line p-3">
                 <div className="font-medium text-ink">{a}</div>
                 <div className="text-muted">{b}</div>
@@ -101,7 +98,7 @@ export default function DataPage() {
 
       <Card title={t("dt_schema")} pad={false}>
         <table className="tbl">
-          <thead><tr><th>Таблица</th><th>{t("dt_required")}</th><th>{t("dt_optional")}</th><th></th></tr></thead>
+          <thead><tr><th>{t("dt_table")}</th><th>{t("dt_required")}</th><th>{t("dt_optional")}</th><th></th></tr></thead>
           <tbody>
             {schema?.map((s) => (
               <tr key={s.table}>
