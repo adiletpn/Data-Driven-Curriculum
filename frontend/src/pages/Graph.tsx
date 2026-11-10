@@ -8,7 +8,7 @@ import type { Edge, GraphData } from "../lib/types";
 
 const NW = 186, NH = 58, CG = 52, RG = 22, PAD = 20, HEAD = 34;
 
-function wrap(s: string, n = 26): string[] {
+function wrap(s: string, n = 24): string[] {
   const words = s.split(" ");
   const lines: string[] = [];
   let cur = "";
@@ -147,7 +147,7 @@ export default function Graph() {
                 <Tag tone={e.kind === "unexpected" ? "warn" : "slate"}>{e.kind === "unexpected" ? t("gr_unexpected") : t("gr_indirect")}</Tag>
               </li>
             ))}
-            {!data.hidden.length && <li className="text-muted">—</li>}
+            {!data.hidden.length && <li className="text-muted">{t("gr_none_hidden")}</li>}
           </ul>
         </Card>
         <Card title={t("gr_nominal")}>
@@ -158,7 +158,7 @@ export default function Graph() {
                 <div className="text-[12px] text-muted">{t("gr_strength")}: {fmt(e.excess, 3)}</div>
               </li>
             ))}
-            {!data.nominal.length && <li className="text-muted">—</li>}
+            {!data.nominal.length && <li className="text-muted">{t("gr_none_nominal")}</li>}
           </ul>
         </Card>
       </div>
