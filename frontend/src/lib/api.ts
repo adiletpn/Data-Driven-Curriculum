@@ -1,6 +1,19 @@
 import { useEffect, useState } from "react";
 
 const BASE = (import.meta as any).env?.VITE_API_URL ?? "";
+const TOKEN_KEY = "ddc.token";
+
+export function getToken(): string | null {
+  try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+}
+export function setToken(t: string | null) {
+  try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
+}
+export const AUTH_EXPIRED = "ddc:auth-expired";
+function headers(extra: Record<string, string> = {}) {
+  const t = getToken();
+  return t ? { ...extra, Authorization: `Bearer ${t}` } : extra;
+}
 const cache = new Map<string, unknown>();
 const listeners = new Set<() => void>();
 
@@ -10,6 +23,7 @@ export function clearCache() {
 }
 
 async function fail(r: Response): Promise<never> {
+  if (r.status === 401) window.dispatchEvent(new Event(AUTH_EXPIRED));
   const text = await r.text();
   let msg = text;
   try {
@@ -19,7 +33,7 @@ async function fail(r: Response): Promise<never> {
 }
 
 export async function get<T>(path: string): Promise<T> {
-  const r = await fetch(BASE + path);
+  const r = await fetch(BASE + path, { headers: headers() });
   if (!r.ok) return fail(r);
   return r.json();
 }
@@ -27,7 +41,7 @@ export async function get<T>(path: string): Promise<T> {
 export async function post<T>(path: string, body: unknown): Promise<T> {
   const r = await fetch(BASE + path, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: headers({ "content-type": "application/json" }),
     body: JSON.stringify(body),
   });
   if (!r.ok) return fail(r);
@@ -37,12 +51,16 @@ export async function post<T>(path: string, body: unknown): Promise<T> {
 export async function upload<T>(files: File[]): Promise<T> {
   const fd = new FormData();
   files.forEach((f) => fd.append("files", f));
-  const r = await fetch(BASE + "/api/data/upload", { method: "POST", body: fd });
+  const r = await fetch(BASE + "/api/data/upload", { method: "POST", body: fd, headers: headers() });
   if (!r.ok) return fail(r);
   return r.json();
 }
 
-export const apiUrl = (p: string) => BASE + p;
+/** URL for plain downloads (<a href>): the token travels as a query parameter. */
+export const apiUrl = (p: string) => {
+  const t = getToken();
+  return BASE + p + (t ? `${p.includes("?") ? "&" : "?"}token=${encodeURIComponent(t)}` : "");
+};
 
 /** GET with an in-memory cache shared across pages. `path = null` skips the request. */
 export function useApi<T>(path: string | null) {
