@@ -1,6 +1,6 @@
-import { Printer } from "lucide-react";
+import { FileSpreadsheet, Printer } from "lucide-react";
 import { ErrorBox, Loading, SeverityIcon } from "../components/ui";
-import { useApi } from "../lib/api";
+import { apiUrl, useApi } from "../lib/api";
 import { useApp } from "../lib/app";
 import type { Severity } from "../lib/types";
 
@@ -21,7 +21,8 @@ export default function Report() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <div className="no-print mb-4 flex justify-end">
+      <div className="no-print mb-4 flex justify-end gap-2">
+        <a className="btn" href={apiUrl(`/api/export.xlsx?subject=${subject}`)}><FileSpreadsheet className="h-4 w-4" />{t("rp_excel")}</a>
         <button className="btn btn-primary" onClick={() => window.print()}><Printer className="h-4 w-4" />{t("rp_print")}</button>
       </div>
       <article className="card space-y-8 p-8 md:p-12">
