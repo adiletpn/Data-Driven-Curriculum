@@ -4,9 +4,24 @@ from fastapi.testclient import TestClient
 from app.main import app
 
 
+def _login(c, username, password):
+    r = c.post("/api/auth/login", json={"username": username, "password": password})
+    assert r.status_code == 200, r.text
+    return {"Authorization": f"Bearer {r.json()['token']}"}
+
+
 @pytest.fixture(scope="module")
 def client():
-    return TestClient(app)
+    c = TestClient(app)
+    c.headers.update(_login(c, "admin", "admin2026"))
+    return c
+
+
+@pytest.fixture(scope="module")
+def director():
+    c = TestClient(app)
+    c.headers.update(_login(c, "director", "demo2026"))
+    return c
 
 
 @pytest.mark.parametrize("path", [
@@ -19,6 +34,33 @@ def client():
 def test_endpoints(client, path):
     r = client.get(path)
     assert r.status_code == 200, r.text
+
+
+def test_requires_login():
+    c = TestClient(app)
+    assert c.get("/api/overview?subject=ALG7").status_code == 401
+    assert c.get("/api/health").status_code == 200
+    assert c.post("/api/auth/login", json={"username": "admin", "password": "wrong"}).status_code == 401
+
+
+def test_director_sees_only_own_school(director):
+    assert director.get("/api/school/S072?subject=ALG7").status_code == 200
+    assert director.get("/api/school/S001?subject=ALG7").status_code == 403
+    assert director.get("/api/schools?subject=ALG7").status_code == 403      # no cross-school ranking
+    assert director.get("/api/textbooks?subject=ALG7").status_code == 403
+    rows = director.get("/api/topics?subject=ALG7&school_id=S001").json()   # school filter is forced
+    own = director.get("/api/school/S072?subject=ALG7").json()["topics"]
+    assert [r["mean_pct"] for r in rows] == [r["school"] for r in own]
+
+
+def test_only_admin_uploads(director):
+    assert director.post("/api/data/reset", json={}).status_code == 403
+
+
+def test_token_in_query_for_downloads(client):
+    token = client.headers["Authorization"].split()[1]
+    c = TestClient(app)
+    assert c.get(f"/api/export.xlsx?subject=GEO7&token={token}").status_code == 200
 
 
 def test_unknown_subject(client):
