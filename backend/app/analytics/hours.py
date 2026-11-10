@@ -164,7 +164,7 @@ def optimize(ds, subject_id: str, mode: str = "balanced", flex: float = 0.3, tot
 
     def fit():
         c_all = _class_frame(ds, subject_id, None)
-        full = ds.cached(("hours_fit", subject_id, ()), lambda: _estimate(c_all, topics)) if filters else None
+        full = ds.cached(("hours_prior", subject_id), lambda: _estimate(c_all, topics)) if filters else None
         c = _class_frame(ds, subject_id, filters)
         prior = {k: v["beta"] for k, v in full.items()} if full else None
         est = _estimate(c, topics, prior)
@@ -180,9 +180,7 @@ def optimize(ds, subject_id: str, mode: str = "balanced", flex: float = 0.3, tot
             boot.append({t: (v["beta"], v["level"]) for t, v in eb.items()})
         return est, boot, c
 
-    est, boot, c = ds.cached(key_fit, fit) if not (not filters and key_fit in ds._cache) else ds._cache[key_fit]
-    if not filters:
-        ds._cache[key_fit] = (est, boot, c)
+    est, boot, c = ds.cached(key_fit, fit)
 
     tt = {x["topic_id"]: x for x in topic_table(ds, subject_id, filters or None)}
     pre = prereq_analyze(ds, subject_id)
