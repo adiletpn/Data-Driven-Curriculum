@@ -9,9 +9,18 @@ export function clearCache() {
   listeners.forEach((l) => l());
 }
 
+async function fail(r: Response): Promise<never> {
+  const text = await r.text();
+  let msg = text;
+  try {
+    msg = JSON.parse(text).detail ?? text;
+  } catch { /* not JSON */ }
+  throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+}
+
 export async function get<T>(path: string): Promise<T> {
   const r = await fetch(BASE + path);
-  if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
+  if (!r.ok) return fail(r);
   return r.json();
 }
 
@@ -21,7 +30,7 @@ export async function post<T>(path: string, body: unknown): Promise<T> {
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
+  if (!r.ok) return fail(r);
   return r.json();
 }
 
@@ -29,7 +38,7 @@ export async function upload<T>(files: File[]): Promise<T> {
   const fd = new FormData();
   files.forEach((f) => fd.append("files", f));
   const r = await fetch(BASE + "/api/data/upload", { method: "POST", body: fd });
-  if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
+  if (!r.ok) return fail(r);
   return r.json();
 }
 
