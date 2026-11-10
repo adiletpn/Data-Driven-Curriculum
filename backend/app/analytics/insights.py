@@ -177,6 +177,21 @@ def build(ds, subject_id: str) -> list[dict]:
                          f". Жүктемені арттырмай {opt['hours_moved']} сағатты қайта бөлу +{opt['equivalent_extra_hours'] or '—'} "
                          f"қосымша сағатқа тең әсер береді."),
                 evidence=dict(gain=opt["expected_gain_pp"], ci=opt["gain_ci"], topics=[x["topic_id"] for x in inc]))
+        root_of = {rc["topic_id"]: rc for rc in pr["root_causes"]}
+        trap = [x for x in opt["topics"] if x["status"] in ("critical", "risk") and x["delta"] <= 0
+                and x["topic_id"] in root_of and (x["marginal_pp_per_hour"] or 0) < 1.0]
+        for x in trap[:2]:
+            rc = root_of[x["topic_id"]]
+            add(id=f"hours_trap_{x['topic_id']}", category="hours", severity="warning", link="/hours",
+                title_ru=f"«{x['name']}»: дополнительные часы не помогут",
+                title_kz=f"«{x['name_kz']}»: қосымша сағат көмектеспейді",
+                text_ru=(f"Тема слабая ({_f(x['mean_pct'], 0)}%), но классы, которые тратили на неё больше времени, почти не выигрывают "
+                         f"({_f(x['marginal_pp_per_hour'], 2)} п.п./ч). Причина — базовая тема «{rc['root_name']}»: "
+                         f"вкладывайтесь в неё."),
+                text_kz=(f"Тақырып әлсіз ({_f(x['mean_pct'], 0)}%), бірақ оған көбірек уақыт бөлген сыныптар ұтпайды "
+                         f"({_f(x['marginal_pp_per_hour'], 2)} п.т./сағ). Себебі — «{tmap.get(rc['root_id'], {}).get('name_kz', rc['root_name'])}» "
+                         f"базалық тақырыбы: соған көңіл бөліңіз."),
+                evidence=dict(topic=x["topic_id"], root=rc["root_id"], marginal=x["marginal_pp_per_hour"]))
         sat = [x for x in dec if "saturated" in x["reasons"]]
         if sat:
             add(id="hours_saturated", category="hours", severity="info", link="/hours",
