@@ -2,7 +2,7 @@ import { ArrowRight, Ban, CheckCircle2, GraduationCap, OctagonAlert, Users } fro
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Card, ErrorBox, Kpi, Loading, PageHeader, PctBar, SeverityIcon, STATUS_COLOR, StatusBadge, Tag } from "../components/ui";
+import { Card, ErrorBox, Kpi, Loading, PctBar, SeverityIcon, STATUS_COLOR, StatusBadge, Tag } from "../components/ui";
 import { useApi } from "../lib/api";
 import { useApp } from "../lib/app";
 import { fmt } from "../lib/i18n";
@@ -22,18 +22,48 @@ export default function Overview() {
   if (loading || !data) return <Loading />;
   const s = data.summary;
   const subj = meta?.subjects.find((x) => x.subject_id === subject);
+  const top = data.insights.find((i) => i.severity === "critical") ?? data.insights[0];
   const dist = s.distribution.map((n, i) => ({ bin: `${i * 10}–${i * 10 + 10}`, n }));
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={`${t("ov_title")}: ${L(subj, "name")} ${subj?.grade} ${t("grade")}`}
-        sub={`${s.n_students.toLocaleString("ru-RU")} ${t("students")} · ${s.n_schools} ${t("schools")} · ${s.n_classes} ${t("classes")} · ${s.n_topics} ${t("topics")}`}
-      />
+      <div className="hero rounded-3xl p-6 text-white md:p-8">
+        <div className="flex flex-wrap items-end justify-between gap-6">
+          <div className="max-w-2xl">
+            <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-white/60">{t("ov_title")}</div>
+            <h1 className="mt-1.5 text-3xl font-semibold tracking-tight md:text-[34px]">{L(subj, "name")} · {subj?.grade} {t("grade")}</h1>
+            <div className="mt-3 flex flex-wrap gap-2 text-[13px]">
+              <span className="hero-chip">{s.n_students.toLocaleString("ru-RU")} {t("students")}</span>
+              <span className="hero-chip">{s.n_schools} {t("schools")}</span>
+              <span className="hero-chip">{s.n_classes} {t("classes")}</span>
+              <span className="hero-chip">{s.n_topics} {t("topics")}</span>
+            </div>
+            {top && (
+              <Link to={top.link} className="mt-5 flex max-w-xl items-start gap-3 rounded-2xl bg-white/10 p-3.5 ring-1 ring-white/15 backdrop-blur transition hover:bg-white/15">
+                <OctagonAlert className="mt-0.5 h-5 w-5 shrink-0 text-orange-200" />
+                <div>
+                  <div className="text-[14px] font-semibold">{lang === "kz" ? top.title_kz : top.title_ru}</div>
+                  <div className="mt-0.5 line-clamp-2 text-[13px] text-white/75">{lang === "kz" ? top.text_kz : top.text_ru}</div>
+                </div>
+              </Link>
+            )}
+          </div>
+          <div className="flex gap-3">
+            <div className="rounded-2xl bg-white/10 px-5 py-4 ring-1 ring-white/15 backdrop-blur">
+              <div className="text-[11px] uppercase tracking-wider text-white/60">{t("ov_mean")}</div>
+              <div className="text-4xl font-semibold tabular-nums">{fmt(s.mean_pct)}<span className="text-lg text-white/60">%</span></div>
+            </div>
+            <div className="rounded-2xl bg-white/10 px-5 py-4 ring-1 ring-white/15 backdrop-blur">
+              <div className="text-[11px] uppercase tracking-wider text-white/60">{t("ov_mastered")}</div>
+              <div className="text-4xl font-semibold tabular-nums">{fmt(s.mastered_share)}<span className="text-lg text-white/60">%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Kpi label={t("ov_mean")} value={fmt(s.mean_pct)} unit="%" icon={<GraduationCap className="h-4 w-4" />} />
-        <Kpi label={t("ov_mastered")} value={fmt(s.mastered_share)} unit="%" icon={<CheckCircle2 className="h-4 w-4" />} note={t("threshold_note")} />
+        <Kpi label={t("status_risk")} value={s.risk_topics} tone={s.risk_topics ? "warn" : "good"} icon={<CheckCircle2 className="h-4 w-4" />} note={t("threshold_note")} />
+        <Kpi label={t("nav_textbooks")} value={s.n_textbooks} icon={<GraduationCap className="h-4 w-4" />} note={`${s.n_schools} ${t("schools")} · ${s.n_classes} ${t("classes")}`} />
         <Kpi label={t("ov_critical")} value={s.critical_topics} tone={s.critical_topics ? "bad" : "good"} icon={<OctagonAlert className="h-4 w-4" />}
           note={`+ ${s.risk_topics} ${t("status_risk").toLowerCase()}`} />
         <Kpi label={t("ov_excluded")} value={s.excluded_items.length} tone={s.excluded_items.length ? "warn" : "default"} icon={<Ban className="h-4 w-4" />}
