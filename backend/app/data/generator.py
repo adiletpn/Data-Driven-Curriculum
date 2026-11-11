@@ -57,7 +57,12 @@ def _section_effect(textbook_id: str, section: str) -> float:
 
 def _skills(sim: _SubjectSim, textbook_override: str | None = None, hours_bump: tuple | None = None):
     """Recompute latent skills with the stored random draws (enables counterfactuals)."""
-    tb = sim.textbook if textbook_override is None else np.full_like(sim.textbook, textbook_override)
+    if textbook_override is None:
+        tb = sim.textbook
+    elif isinstance(textbook_override, np.ndarray):
+        tb = textbook_override
+    else:
+        tb = np.full_like(sim.textbook, textbook_override)
     d, s = {}, {}
     for t in sim.topics:
         h = sim.hours[t["id"]].astype(float)
@@ -164,6 +169,8 @@ def generate(out_dir: str | Path, seed: int = 42, n_schools: int = 160) -> dict:
             eps={t["id"]: rng.normal(0, 0.55, len(sr)) for t in topics},
         )
         sims[sj] = sim
+        sim.school_ids = sch.iloc[sr["si"].to_numpy()]["school_id"].to_numpy()
+        sim.realized = {}
         skills = _skills(sim)
 
         # items + responses
@@ -191,6 +198,10 @@ def generate(out_dir: str | Path, seed: int = 42, n_schools: int = 160) -> dict:
 
                 p = 0.2 + 0.8 * _sigmoid(a * (skills[t["id"]] - delta))
                 ok = rng.random(len(p)) < p
+                if defect is None:
+                    acc = sim.realized.setdefault(t["id"], [np.zeros(len(p)), 0])
+                    acc[0] += ok
+                    acc[1] += 1
                 others = [o for o in distractors if o != popular]
                 wrong = np.where(rng.random(len(p)) < 0.55, popular, rng.choice(others, len(p)))
                 ans = np.where(ok, true_key, wrong)
@@ -215,9 +226,47 @@ def generate(out_dir: str | Path, seed: int = 42, n_schools: int = 160) -> dict:
     resp = pd.concat(resp_frames, ignore_index=True)
     resp.to_csv(out_dir / "responses.csv", index=False)
 
+    history, switch_truth = _history(sims, rng)
+    history.to_csv(out_dir / "history.csv", index=False)
+
     truth = _ground_truth(sims, truth_items)
+    truth["textbook_switch"] = switch_truth
     (out_dir / "ground_truth.json").write_text(json.dumps(truth, ensure_ascii=False, indent=2))
     return {"students": len(stu), "schools": len(sch), "classes": len(classes), "responses": len(resp)}
+
+
+def _history(sims: dict, rng) -> tuple[pd.DataFrame, list]:
+    """Previous school year: some schools switched TO their current textbook from the reference one.
+
+    Previous-year school means are the counterfactual expected scores of the same school under the old book,
+    plus a cohort shock and a small regional trend. The true effect of each switch (ATT) is known exactly,
+    which lets us validate the difference-in-differences estimate.
+    """
+    rows, truth = [], []
+    for sj, sim in sims.items():
+        tbs = [t["textbook_id"] for t in C.TEXTBOOKS if t["subject_id"] == sj]
+        ref = tbs[0]
+        schools = pd.unique(sim.school_ids)
+        cur_tb = {s: sim.textbook[sim.school_ids == s][0] for s in schools}
+        prev_tb = {s: (ref if cur_tb[s] != ref and rng.random() < 0.4 else cur_tb[s]) for s in schools}
+        prev_arr = np.array([prev_tb[s] for s in sim.school_ids])
+        exp_prev = np.mean(list(_expected_topic_pct(sim, sim.items_by_topic, _skills(sim, prev_arr)).values()), axis=0)
+        exp_cur = np.mean(list(_expected_topic_pct(sim, sim.items_by_topic, _skills(sim)).values()), axis=0)
+        realized = np.mean([v[0] / v[1] for v in sim.realized.values()], axis=0)
+        per_switch = {}
+        for s in schools:
+            m = sim.school_ids == s
+            n = int(m.sum())
+            prev = (exp_prev[m].mean() * 100 + rng.normal(0, 1.8) - 1.2 + rng.normal(0, 15 / np.sqrt(n)))
+            rows.append(dict(school_id=s, subject_id=sj, year=2024, textbook_id=prev_tb[s], mean_pct=round(float(prev), 2), n_students=n))
+            rows.append(dict(school_id=s, subject_id=sj, year=2025, textbook_id=cur_tb[s],
+                             mean_pct=round(float(realized[m].mean() * 100), 2), n_students=n))
+            if prev_tb[s] != cur_tb[s]:
+                per_switch.setdefault((prev_tb[s], cur_tb[s]), []).append((exp_cur[m].mean() - exp_prev[m].mean()) * 100)
+        for (a, b), effs in per_switch.items():
+            truth.append(dict(subject_id=sj, from_textbook=a, to_textbook=b, n_schools=len(effs),
+                              att_pp=round(float(np.mean(effs)), 2)))
+    return pd.DataFrame(rows), truth
 
 
 def _ground_truth(sims: dict, truth_items: list) -> dict:
