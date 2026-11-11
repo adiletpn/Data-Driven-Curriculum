@@ -23,7 +23,11 @@ from .analytics import schools as schools_mod
 from .analytics import textbooks as textbooks_mod
 from .analytics import topics as topics_mod
 from .analytics import validation as validation_mod
-from .data.store import SCHEMA, TABLE_DESCRIPTIONS, store
+from .analytics import pilot as pilot_mod
+from .analytics import risk as risk_mod
+from .analytics import switching as switching_mod
+from . import lesson as lesson_mod
+from .data.store import OPTIONAL_SCHEMA, SCHEMA, TABLE_DESCRIPTIONS, store
 from .report import build_report
 from .auth import ANY, REGION, login as auth_login, require
 
@@ -153,6 +157,39 @@ def school_profile(school_id: str, subject: str | None = None, user: dict = Depe
                    textbook_title=titles.get(row["textbook_id"], row["textbook_id"]), topics=topics_cmp,
                    hours=[dict(topic_id=x["topic_id"], name=x["name"], name_kz=x["name_kz"], planned=x["planned"],
                                recommended=x["recommended"], delta=x["delta"]) for x in hrs["topics"] if x["delta"]]))
+
+
+@app.get("/api/school/{school_id}/risk")
+def school_risk(school_id: str, subject: str | None = None, threshold: float = Query(0.6, ge=0.3, le=0.95),
+                user: dict = Depends(require(*ANY))):
+    """Early warning: students likely to fail upcoming topics (anonymous IDs)."""
+    if user["role"] == "director" and user["school_id"] != school_id:
+        raise HTTPException(403, "Директор видит только свою школу")
+    return ok(risk_mod.school_risk(store.get(), _subject(subject), school_id, threshold))
+
+
+@app.get("/api/lesson")
+def lesson_plan(topic_id: str, subject: str | None = None, lang: str = "ru", user: dict = Depends(require(*ANY))):
+    return ok(lesson_mod.build(store.get(), _subject(subject), topic_id, lang))
+
+
+@app.get("/api/districts")
+def districts(subject: str | None = None, user: dict = Depends(require(*REGION))):
+    return ok(schools_mod.district_map(store.get(), _subject(subject)))
+
+
+@app.get("/api/switching")
+def switching(subject: str | None = None, user: dict = Depends(require(*REGION))):
+    res = switching_mod.analyze(store.get(), _subject(subject))
+    if res is None:
+        raise HTTPException(404, "Нет данных за несколько лет (таблица history)")
+    return ok(res)
+
+
+@app.get("/api/pilot")
+def pilot(subject: str | None = None, topic_id: str | None = None, effect_pp: float | None = Query(None, gt=0, le=30),
+          power: float = Query(0.8, ge=0.5, le=0.95), user: dict = Depends(require(*REGION))):
+    return ok(pilot_mod.plan(store.get(), _subject(subject), topic_id, effect_pp, power))
 
 
 # ---------------------------------------------------------------- analytics
@@ -321,7 +358,7 @@ def export_xlsx(subject: str | None = None, user: dict = Depends(require(*REGION
 @app.get("/api/data/schema")
 def data_schema(user: dict = Depends(require(*ANY))):
     return ok([dict(table=k, required=v["required"], optional=v["optional"], description=TABLE_DESCRIPTIONS[k])
-               for k, v in SCHEMA.items()])
+               for k, v in {**SCHEMA, **OPTIONAL_SCHEMA}.items()])
 
 
 _TEMPLATE_CACHE: dict[str, bytes] = {}
@@ -338,8 +375,9 @@ def data_template(user: dict = Depends(require(*ANY))):
             generate(tmp, seed=7, n_schools=8)
             buf = io.BytesIO()
             with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
-                for name in SCHEMA:
-                    z.write(Path(tmp) / f"{name}.csv", f"{name}.csv")
+                for name in [*SCHEMA, *OPTIONAL_SCHEMA]:
+                    if (Path(tmp) / f"{name}.csv").exists():
+                        z.write(Path(tmp) / f"{name}.csv", f"{name}.csv")
                 z.writestr("README.txt", "\n".join(f"{k}.csv — {v}" for k, v in TABLE_DESCRIPTIONS.items()))
             _TEMPLATE_CACHE["zip"] = buf.getvalue()
     buf = io.BytesIO(_TEMPLATE_CACHE["zip"])
