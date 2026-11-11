@@ -65,7 +65,7 @@ def models(ds, subject_id: str) -> dict:
     return ds.cached(("risk_models", subject_id), build)
 
 
-def school_risk(ds, subject_id: str, school_id: str, threshold: float = 0.6, limit: int = 60) -> dict:
+def school_risk(ds, subject_id: str, school_id: str, threshold: float = 0.85, limit: int = 60) -> dict:
     M = models(ds, subject_id)
     wide, meta, base = M["wide"], M["meta"], M["base"]
     ids = meta.index[meta["school_id"] == school_id]

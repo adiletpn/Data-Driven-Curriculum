@@ -160,7 +160,7 @@ def school_profile(school_id: str, subject: str | None = None, user: dict = Depe
 
 
 @app.get("/api/school/{school_id}/risk")
-def school_risk(school_id: str, subject: str | None = None, threshold: float = Query(0.6, ge=0.3, le=0.95),
+def school_risk(school_id: str, subject: str | None = None, threshold: float = Query(0.85, ge=0.3, le=0.95),
                 user: dict = Depends(require(*ANY))):
     """Early warning: students likely to fail upcoming topics (anonymous IDs)."""
     if user["role"] == "director" and user["school_id"] != school_id:
