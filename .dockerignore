@@ -6,3 +6,6 @@ frontend/dist
 backend/data
 .git
 *.tsbuildinfo
+**/.env
+**/.env.*
+!**/.env.example
