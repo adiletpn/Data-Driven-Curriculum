@@ -1,6 +1,7 @@
 import { ArrowDownRight, ArrowUpRight, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import RegionMap from "../components/RegionMap";
 import { Card, cx, EffectBar, ErrorBox, Kpi, Loading, Note, PageHeader, Segmented, Tag } from "../components/ui";
 import { useApi } from "../lib/api";
 import { useApp } from "../lib/app";
@@ -13,8 +14,10 @@ export default function Schools() {
   const [q, setQ] = useState("");
   const nav = useNavigate();
   const [cat, setCat] = useState<"all" | "below" | "above">("all");
+  const [district, setDistrict] = useState<string | null>(null);
   const rows = useMemo(() => (data?.schools ?? []).filter((s) =>
-    (cat === "all" || s.category === cat) && (!q || `${s.name} ${s.district}`.toLowerCase().includes(q.toLowerCase()))), [data, q, cat]);
+    (cat === "all" || s.category === cat) && (!district || s.district === district) &&
+    (!q || `${s.name} ${s.district}`.toLowerCase().includes(q.toLowerCase()))), [data, q, cat, district]);
   if (error) return <ErrorBox msg={error} />;
   if (loading || !data) return <Loading />;
   const range = Math.max(...data.schools.map((s) => Math.max(Math.abs(s.ci[0]), Math.abs(s.ci[1])))) * 1.05;
@@ -28,6 +31,10 @@ export default function Schools() {
         <Kpi label={t("sc_typical")} value={data.schools.length - data.n_above - data.n_below} />
         <Kpi label={t("sc_shifted")} value={data.rank_shifts} tone="warn" note={t("sc_shifted_note")} />
       </div>
+
+      <Card title={t("map_title")} sub={district ? `${t("map_filtered")}: ${district}` : t("map_sub")}>
+        <RegionMap selected={district} onSelect={setDistrict} />
+      </Card>
 
       <div className="space-y-6">
         <Card pad={false}
