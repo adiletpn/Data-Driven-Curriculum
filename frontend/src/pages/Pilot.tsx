@@ -38,7 +38,7 @@ export default function Pilot() {
             options={data.candidates.map((c) => ({ value: c.topic_id, label: `${L(c, "name")} (+${c.delta} ${t("hours_short")})` }))} />
           <label className="flex items-center gap-2 text-[13px] text-muted">
             {t("pl_effect")}
-            <input type="range" min={1} max={15} step={0.5} value={eff} onChange={(e) => setEffect(+e.target.value)} className="accent-[#16a34a]" />
+            <input type="range" min={1} max={15} step={0.5} value={eff} onChange={(e) => setEffect(+e.target.value)} className="accent-[#4f52d1]" />
             <b className="w-16 text-ink">+{fmt(eff, 1)} {t("pp")}</b>
           </label>
           <div className="flex items-center gap-2 text-[13px] text-muted">{t("pl_power")}
@@ -72,9 +72,9 @@ export default function Pilot() {
                 <XAxis dataKey="schools" tick={{ fontSize: 11, fill: "#64748b" }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#64748b" }} unit="%" />
                 <Tooltip formatter={(v: number) => `${fmt(v, 0)}%`} labelFormatter={(n) => `${n} ${t("schools")}`} />
-                <ReferenceLine y={Number(power) * 100} stroke="#16a34a" strokeDasharray="4 3" />
-                <ReferenceLine x={data.schools_available} stroke="#c2410c" strokeDasharray="4 3" label={{ value: t("pl_available"), fontSize: 10, fill: "#c2410c", position: "top" }} />
-                <Area dataKey="power" stroke="#16a34a" fill="#16a34a" fillOpacity={0.15} strokeWidth={2.5} isAnimationActive={false} />
+                <ReferenceLine y={Number(power) * 100} stroke="#4f52d1" strokeDasharray="4 3" />
+                <ReferenceLine x={data.schools_available} stroke="#cc3340" strokeDasharray="4 3" label={{ value: t("pl_available"), fontSize: 10, fill: "#cc3340", position: "top" }} />
+                <Area dataKey="power" stroke="#4f52d1" fill="#4f52d1" fillOpacity={0.15} strokeWidth={2.5} isAnimationActive={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

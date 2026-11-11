@@ -24,12 +24,12 @@ function color(metric: Metric, v: number | null, all: number[]) {
   if (v == null) return "#e2e8f0";
   if (metric === "value_added") {
     const k = Math.max(-1, Math.min(1, v / 4));
-    return k >= 0 ? `rgba(22,163,74,${0.15 + k * 0.75})` : `rgba(234,88,12,${0.15 - k * 0.75})`;
+    return k >= 0 ? `rgba(22,131,79,${0.12 + k * 0.6})` : `rgba(204,51,64,${0.12 - k * 0.6})`;
   }
   const lo = Math.min(...all), hi = Math.max(...all);
   const k = hi > lo ? (v - lo) / (hi - lo) : 0.5;
-  if (metric === "below") return `rgba(234,88,12,${0.12 + k * 0.78})`;
-  return `rgba(22,163,74,${0.12 + k * 0.78})`;
+  if (metric === "below") return `rgba(204,51,64,${0.1 + k * 0.6})`;
+  return `rgba(79,82,209,${0.1 + k * 0.6})`;
 }
 
 export default function RegionMap({ onSelect, selected }: { onSelect?: (d: string | null) => void; selected?: string | null }) {

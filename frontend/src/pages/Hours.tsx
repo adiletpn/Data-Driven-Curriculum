@@ -24,12 +24,12 @@ function Curve({ tp }: { tp: HoursTopic }) {
               label={{ value: t("hours_short"), position: "insideBottomRight", offset: -2, fontSize: 11, fill: "#64748b" }} />
             <YAxis domain={[lo, hi]} tick={{ fontSize: 11, fill: "#64748b" }} unit="%" />
             <Tooltip formatter={(v: any) => (Array.isArray(v) ? `${fmt(v[0])}–${fmt(v[1])}%` : `${fmt(v)}%`)} labelFormatter={(h) => `${h} ${t("hours_short")}`} />
-            <Area dataKey="band" stroke="none" fill="#15803d" fillOpacity={0.12} isAnimationActive={false} />
+            <Area dataKey="band" stroke="none" fill="#4f52d1" fillOpacity={0.12} isAnimationActive={false} />
             <Scatter data={tp.scatter} dataKey="m" fill="#94a3b8" fillOpacity={0.55} shape="circle" isAnimationActive={false} />
-            <Line dataKey="m" stroke="#15803d" strokeWidth={2.5} dot={false} isAnimationActive={false} />
+            <Line dataKey="m" stroke="#4f52d1" strokeWidth={2.5} dot={false} isAnimationActive={false} />
             <ReferenceLine x={tp.planned} stroke="#64748b" strokeDasharray="4 3" label={{ value: t("hr_plan"), fontSize: 10, fill: "#64748b", position: "top" }} />
             {tp.recommended !== tp.planned && (
-              <ReferenceLine x={tp.recommended} stroke={tp.delta > 0 ? "#15803d" : "#c2410c"} strokeWidth={2} label={{ value: t("hr_rec"), fontSize: 10, fill: tp.delta > 0 ? "#15803d" : "#c2410c", position: "top" }} />
+              <ReferenceLine x={tp.recommended} stroke={tp.delta > 0 ? "#16834f" : "#cc3340"} strokeWidth={2} label={{ value: t("hr_rec"), fontSize: 10, fill: tp.delta > 0 ? "#16834f" : "#cc3340", position: "top" }} />
             )}
           </ComposedChart>
         </ResponsiveContainer>
@@ -93,7 +93,7 @@ export default function Hours() {
           </div>
           <label className="flex items-center gap-2 text-[13px] text-muted">
             {t("hr_flex")}
-            <input type="range" min={0.1} max={0.5} step={0.05} value={flex} onChange={(e) => setFlex(+e.target.value)} className="accent-[#15803d]" />
+            <input type="range" min={0.1} max={0.5} step={0.05} value={flex} onChange={(e) => setFlex(+e.target.value)} className="accent-[#4f52d1]" />
             <b className="w-10 text-ink">±{Math.round(flex * 100)}%</b>
           </label>
           <Select label={t("hr_scope")} value={scope} onChange={setScope} options={[

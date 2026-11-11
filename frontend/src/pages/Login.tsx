@@ -65,11 +65,12 @@ export default function Login() {
       </div>
 
       {/* form */}
-      <div className="flex flex-col bg-white px-6 py-8 sm:px-12">
-        <div className="flex justify-end">
+      <div className="relative flex flex-col overflow-hidden px-6 py-8 sm:px-12">
+        <div className="aurora" aria-hidden><span /><span /><span /></div>
+        <div className="relative z-[1] flex justify-end">
           <Segmented size="sm" value={lang} onChange={setLang} options={[{ value: "ru", label: "РУС" }, { value: "kz", label: "ҚАЗ" }]} />
         </div>
-        <div className="m-auto w-full max-w-sm py-10">
+        <div className="relative z-[1] m-auto w-full max-w-sm py-10">
           <div className="mb-8 lg:hidden">
             <div className="text-lg font-semibold">Data-Driven Curriculum</div>
             <div className="text-[14px] text-muted">{t("lg_hero")}</div>

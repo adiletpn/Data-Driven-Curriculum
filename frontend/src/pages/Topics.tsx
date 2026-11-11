@@ -53,7 +53,7 @@ function TopicDetail({ id, onClose }: { id: string; onClose: () => void }) {
                 <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
                 <Tooltip cursor={{ fill: "#f1f5f9" }} formatter={(v: number) => [v, t("students")]} />
                 <Bar dataKey="n" radius={[3, 3, 0, 0]}>
-                  {hist.map((h, i) => <Cell key={i} fill={h.ok ? "#15803d" : "#f59e0b"} />)}
+                  {hist.map((h, i) => <Cell key={i} fill={h.ok ? "#16834f" : "#f59e0b"} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -77,7 +77,7 @@ function TopicDetail({ id, onClose }: { id: string; onClose: () => void }) {
             {Object.entries(data.textbooks.cells).map(([b, c]) => (
               <div key={b} className="grid grid-cols-[1fr_120px_48px] items-center gap-2 py-0.5 text-[13px]">
                 <span className={cx(b === data.textbooks!.best && "font-semibold")}>{tbTitle(b)}</span>
-                <PctBar value={c.adjusted} color={b === data.textbooks!.best ? "#15803d" : "#94a3b8"} />
+                <PctBar value={c.adjusted} color={b === data.textbooks!.best ? "#4f52d1" : "#c4c4cc"} />
                 <span className="num">{fmt(c.adjusted)}%</span>
               </div>
             ))}

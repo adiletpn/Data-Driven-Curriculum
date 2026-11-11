@@ -39,7 +39,7 @@ export default function Equity() {
                   <Legend wrapperStyle={{ fontSize: 12 }} />
                   <ReferenceLine x={0} stroke="#94a3b8" />
                   <Bar dataKey="raw" name={t("eq_raw")} fill="#cbd5e1" radius={2} />
-                  <Bar dataKey="adj" name={t("eq_adj")} fill="#15803d" radius={2} />
+                  <Bar dataKey="adj" name={t("eq_adj")} fill="#4f52d1" radius={2} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

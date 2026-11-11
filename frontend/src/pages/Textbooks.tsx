@@ -7,7 +7,7 @@ import { useApp } from "../lib/app";
 import { fmt, signed } from "../lib/i18n";
 import type { TbSection, TextbookData } from "../lib/types";
 
-const PALETTE = ["#15803d", "#2563eb", "#9333ea", "#c2410c"];
+const PALETTE = ["#4f52d1", "#0e8fd6", "#10a26b", "#d4880f"];
 
 function MeansPanel({ title, sec, kind, books, color, lo }: { title: string; sec: TbSection; kind: "naive" | "adjusted"; books: string[]; color: (b: string) => string; lo: number }) {
   const { tbTitle, t } = useApp();
@@ -147,7 +147,7 @@ export default function Textbooks() {
                       return (
                         <td key={b} className="num p-1">
                           <div className={cx("rounded-md px-2 py-1.5 tabular-nums", row.best === b && "ring-2 ring-accent")}
-                            style={{ background: `rgba(21,128,61,${0.06 + k * 0.32})` }}>
+                            style={{ background: `rgba(22,131,79,${0.06 + k * 0.32})` }}>
                             <div className="font-semibold">{fmt(c.adjusted)}%</div>
                             <div className="text-[10.5px] text-slate-600">{b === data.reference ? "—" : `${signed(c.effect)}${sig ? " *" : ""}`}</div>
                           </div>
