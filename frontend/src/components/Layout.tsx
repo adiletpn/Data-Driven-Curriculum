@@ -57,8 +57,8 @@ function Logo() {
         <svg viewBox="0 0 32 32" className="h-5 w-5"><path d="M8 24V14M14 24V8M20 24v-8M26 24V12" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" /></svg>
       </div>
       <div className="leading-tight">
-        <div className="text-[14px] font-semibold text-white">Data-Driven</div>
-        <div className="text-[12px] font-medium text-slate-400">Curriculum</div>
+        <div className="text-[15px] font-semibold text-ink">Data-Driven</div>
+        <div className="text-[12.5px] font-medium text-muted">Curriculum</div>
       </div>
     </div>
   );
@@ -76,7 +76,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           if (!items.length) return null;
           return (
             <div key={g.group}>
-              <div className="mb-1.5 px-3 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-500">{t(g.group)}</div>
+              <div className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">{t(g.group)}</div>
               <div className="flex flex-col gap-0.5">
                 {items.map((i) => (
                   <NavLink key={i.to} to={i.to} end={i.to === "/"} onClick={onNavigate}
@@ -91,16 +91,16 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         })}
       </div>
       {user && (
-        <div className="rounded-xl bg-white/[0.05] p-3 ring-1 ring-white/10">
+        <div className="sidebar-user rounded-2xl p-3">
           <div className="flex items-center gap-3">
-            <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-teal-400 to-indigo-500 text-[13px] font-semibold text-white">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-green-400 to-emerald-700 text-[13px] font-semibold text-white">
               {L(user, "name").slice(0, 1)}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[13px] font-medium text-white">{L(user, "name")}</div>
-              <div className="text-[11.5px] text-slate-400">{t(`role_${user.role}` as Key)}</div>
+              <div className="truncate text-[13.5px] font-medium text-ink">{L(user, "name")}</div>
+              <div className="text-[12px] text-muted">{t(`role_${user.role}` as Key)}</div>
             </div>
-            <button onClick={logout} title={t("logout")} className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white">
+            <button onClick={logout} title={t("logout")} className="rounded-lg p-1.5 text-muted hover:bg-slate-100 hover:text-ink">
               <LogOut className="h-4 w-4" />
             </button>
           </div>
@@ -118,7 +118,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-full">
-      <aside className="no-print sticky top-0 hidden h-screen w-64 shrink-0 lg:block">
+      <aside className="no-print sticky top-0 hidden h-screen w-[272px] shrink-0 lg:block">
         <Sidebar />
       </aside>
       {open && (
