@@ -7,7 +7,7 @@ import { useApp } from "../lib/app";
 import { fmt, signed } from "../lib/i18n";
 import type { TbSection, TextbookData } from "../lib/types";
 
-const PALETTE = ["#4f52d1", "#0e8fd6", "#10a26b", "#d4880f"];
+const PALETTE = ["#4f52d1", "#eb6834", "#1baf7a", "#a1a1aa"];
 
 function MeansPanel({ title, sec, kind, books, color, lo }: { title: string; sec: TbSection; kind: "naive" | "adjusted"; books: string[]; color: (b: string) => string; lo: number }) {
   const { tbTitle, t } = useApp();
@@ -26,7 +26,7 @@ function MeansPanel({ title, sec, kind, books, color, lo }: { title: string; sec
               </span>
               <span className="tabular-nums font-semibold">{fmt(v)}%</span>
             </div>
-            <div className="relative h-3 rounded-full bg-white ring-1 ring-slate-200">
+            <div className="relative h-2.5 rounded-full bg-black/[0.05]">
               <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${((v - lo) / (100 - lo)) * 100}%`, background: color(b), opacity: kind === "naive" ? 0.45 : 1 }} />
             </div>
           </div>

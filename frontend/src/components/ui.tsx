@@ -65,7 +65,7 @@ const STATUS_CLS: Record<Status, string> = {
   strong: "bg-good-soft text-good ring-good/20",
 };
 export const STATUS_COLOR: Record<Status, string> = {
-  critical: "#cc3340", risk: "#d97706", ok: "#64748b", strong: "#16834f",
+  critical: "#d03b3b", risk: "#e9a20f", ok: "#a1a1aa", strong: "#4f52d1",
 };
 
 export function StatusBadge({ s }: { s: Status }) {
@@ -145,14 +145,13 @@ export function Select({ value, onChange, options, label }: {
 
 /** Horizontal bar with a confidence interval whisker (0..100 scale). */
 export function PctBar({ value, ci, color = "#4f52d1", max = 100 }: { value: number; ci?: [number, number]; color?: string; max?: number }) {
+  const w = Math.max(0, Math.min(100, (value / max) * 100));
   return (
-    <div className="relative h-2.5 w-full rounded-full bg-slate-100">
-      <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${(value / max) * 100}%`, background: color }} />
+    <div className="relative h-2 w-full rounded-full bg-black/[0.05]" title={ci ? `${value.toFixed(1)}% · 95%: ${ci[0]}–${ci[1]}` : undefined}>
+      <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${w}%`, background: color }} />
       {ci && ci[0] != null && (
-        <div
-          className="absolute top-1/2 h-3.5 -translate-y-1/2 border-x-2 border-ink/50"
-          style={{ left: `${(ci[0] / max) * 100}%`, width: `${((ci[1] - ci[0]) / max) * 100}%` }}
-        />
+        <div className="absolute top-1/2 h-[2px] -translate-y-1/2 bg-ink/45"
+          style={{ left: `${(ci[0] / max) * 100}%`, width: `${((ci[1] - ci[0]) / max) * 100}%` }} />
       )}
     </div>
   );
@@ -164,14 +163,14 @@ export function EffectBar({ est, ci, range = 15, positiveGood = true }: { est: n
   const pos = (x: number) => `${Math.max(0, Math.min(100, 50 + (x / range) * 50))}%`;
   const sig = ci[0] !== null && ci[1] !== null && (ci[0]! > 0 || ci[1]! < 0);
   const good = positiveGood ? est > 0 : est < 0;
-  const col = !sig ? "#94a3b8" : good ? "#16834f" : "#cc3340";
+  const col = !sig ? "#a1a1aa" : good ? "#4f52d1" : "#e34948";
   return (
     <div className="relative h-5 w-full">
-      <div className="absolute inset-y-0 left-1/2 w-px bg-slate-300" />
+      <div className="absolute inset-y-0 left-1/2 w-px bg-black/[0.15]" />
       {ci[0] !== null && ci[1] !== null && (
-        <div className="absolute top-1/2 h-0.5 -translate-y-1/2" style={{ left: pos(ci[0]!), width: `calc(${pos(ci[1]!)} - ${pos(ci[0]!)})`, background: col }} />
+        <div className="absolute top-1/2 h-[2px] -translate-y-1/2 rounded-full" style={{ left: pos(ci[0]!), width: `calc(${pos(ci[1]!)} - ${pos(ci[0]!)})`, background: col, opacity: 0.55 }} />
       )}
-      <div className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-white" style={{ left: pos(est), background: col }} />
+      <div className="absolute top-1/2 h-[10px] w-[10px] -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-white" style={{ left: pos(est), background: col }} />
     </div>
   );
 }
