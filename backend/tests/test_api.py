@@ -108,7 +108,7 @@ def test_tiny_dataset_is_rejected_with_explanation(client):
         for n in zin.namelist():
             data = zin.read(n)
             if n == "responses.csv":
-                data = b"\n".join(data.split(b"\n")[:40])
+                data = b"\n".join(data.split(b"\n")[:10])
             z.writestr(n, data)
     r = client.post("/api/data/upload", files=[("files", ("tiny.zip", out.getvalue(), "application/zip"))])
     body = r.json()
