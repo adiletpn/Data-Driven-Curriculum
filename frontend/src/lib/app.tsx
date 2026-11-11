@@ -17,8 +17,6 @@ interface Ctx {
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   isRegion: boolean;
-  theme: "light" | "dark";
-  toggleTheme: () => void;
   t: (k: Key) => string;
   /** pick the localized field: name / name_kz */
   L: <T extends Record<string, any>>(o: T | undefined, field: string) => string;
@@ -42,13 +40,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   });
   const [subject, setSubjectState] = useState<string>(() => stored("ddc.subject", ""));
   const [user, setUser] = useState<User | null>(null);
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    const q = new URLSearchParams(window.location.search).get("theme");
-    if (q === "light" || q === "dark") return q;
-    const st = stored<string>("ddc.theme", "");
-    if (st === "light" || st === "dark") return st;
-    try { return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; } catch { return "light"; }
-  });
   const [authReady, setAuthReady] = useState(false);
   const { data: meta } = useApi<Meta>(user ? "/api/meta" : null);
 
@@ -85,10 +76,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = lang === "kz" ? "kk" : "ru";
   }, [lang]);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    try { localStorage.setItem("ddc.theme", theme); } catch { /* ignore */ }
-  }, [theme]);
 
   const value = useMemo<Ctx>(() => {
     const titles = new Map(meta?.textbooks.map((b) => [b.textbook_id, b.title]) ?? []);
@@ -114,13 +101,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
       logout: () => { setToken(null); clearCache(); setUser(null); },
       isRegion: !!user && user.role !== "director",
-      theme,
-      toggleTheme: () => setTheme((x) => (x === "dark" ? "light" : "dark")),
       t: (k) => translate(lang, k),
       L: (o, field) => (o ? (lang === "kz" ? o[`${field}_kz`] || o[field] : o[field]) ?? "" : ""),
       tbTitle: (id) => titles.get(id) ?? id,
     };
-  }, [lang, subject, meta, user, authReady, theme]);
+  }, [lang, subject, meta, user, authReady]);
 
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
 }
