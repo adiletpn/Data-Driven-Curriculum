@@ -84,7 +84,7 @@ def _expected_topic_pct(sim, items_by_topic, skills):
     return out
 
 
-def generate(out_dir: str | Path, seed: int = 42, n_schools: int = 80) -> dict:
+def generate(out_dir: str | Path, seed: int = 42, n_schools: int = 160) -> dict:
     rng = np.random.default_rng(seed)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -92,7 +92,7 @@ def generate(out_dir: str | Path, seed: int = 42, n_schools: int = 80) -> dict:
     # ---------------- schools ----------------
     schools = []
     for k in range(n_schools):
-        district = C.DISTRICTS[0] if k < 18 else C.DISTRICTS[1 + (k % (len(C.DISTRICTS) - 1))]
+        district = C.DISTRICTS[0] if k < round(n_schools * 0.22) else C.DISTRICTS[1 + (k % (len(C.DISTRICTS) - 1))]
         urban = district == "г. Тараз" or rng.random() < 0.2
         lang = "kz" if rng.random() < 0.62 else "ru"
         eff = rng.normal(0, 0.35) + (0.0 if urban else -0.5)

@@ -358,7 +358,7 @@ async def data_upload(files: list[UploadFile] = File(...), user: dict = Depends(
 
 class Reset(BaseModel):
     seed: int | None = None
-    n_schools: int = 80
+    n_schools: int = 160
 
 
 @app.post("/api/data/reset")
