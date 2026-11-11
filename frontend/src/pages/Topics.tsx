@@ -2,7 +2,8 @@ import { usePersistentState } from "../lib/persist";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { axis, axisNoLine, C, cursorBand, DataEndBar, grid, tip } from "../components/charts";
 import LessonButton from "../components/LessonButton";
 import { Card, cx, ErrorBox, Loading, PageHeader, PctBar, Select, STATUS_COLOR, StatusBadge, Tag } from "../components/ui";
 import { useApi } from "../lib/api";
@@ -47,18 +48,20 @@ function TopicDetail({ id, onClose }: { id: string; onClose: () => void }) {
 
         <div>
           <div className="mb-1 text-[12px] font-semibold text-muted">{t("tp_hist")}</div>
-          <div className="h-32">
-            <ResponsiveContainer>
-              <BarChart data={hist} margin={{ left: -24, right: 4, top: 4 }}>
-                <XAxis dataKey="bin" tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} unit="%" />
-                <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-                <Tooltip cursor={{ fill: "#f1f5f9" }} formatter={(v: number) => [v, t("students")]} />
-                <Bar dataKey="n" radius={[3, 3, 0, 0]}>
-                  {hist.map((h, i) => <Cell key={i} fill={h.ok ? "#16834f" : "#f59e0b"} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <ResponsiveContainer width="100%" height={130}>
+            <BarChart data={hist} margin={{ left: -24, right: 4, top: 6 }} barCategoryGap={2}>
+              <CartesianGrid vertical={false} {...grid} />
+              <XAxis dataKey="bin" {...axis} tick={{ ...axis.tick, fontSize: 10.5 }} interval={1} />
+              <YAxis {...axisNoLine} tick={{ ...axis.tick, fontSize: 10.5 }} allowDecimals={false} />
+              <Tooltip cursor={cursorBand} content={tip((p) => {
+                const d = p[0].payload;
+                return { title: `${d.bin}–${Number(d.bin) + 10}%`, rows: [{ name: t("students"), value: String(d.n), color: d.ok ? C.s1 : C.s1Soft }] };
+              })} />
+              <Bar dataKey="n" maxBarSize={20} shape={<DataEndBar />} isAnimationActive={false}>
+                {hist.map((h, i) => <Cell key={i} fill={h.ok ? C.s1 : C.s1Soft} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
         <div className="grid grid-cols-2 gap-3 text-[13px]">

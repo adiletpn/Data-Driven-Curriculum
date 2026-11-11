@@ -1,7 +1,8 @@
 import { ArrowRight, Ban, CheckCircle2, GraduationCap, OctagonAlert, Users } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Bar, BarChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { axis, axisNoLine, C, ChartFrame, cursorBand, DataEndBar, grid, Legend, tip } from "../components/charts";
 import { Card, ErrorBox, Kpi, Loading, PctBar, SeverityIcon, STATUS_COLOR, StatusBadge, Tag } from "../components/ui";
 import { useApi } from "../lib/api";
 import { useApp } from "../lib/app";
@@ -23,7 +24,9 @@ export default function Overview() {
   const s = data.summary;
   const subj = meta?.subjects.find((x) => x.subject_id === subject);
   const top = data.insights.find((i) => i.severity === "critical") ?? data.insights[0];
-  const dist = s.distribution.map((n, i) => ({ bin: `${i * 10}–${i * 10 + 10}`, n }));
+  const dist = s.distribution.map((n, i) => ({ bin: `${i * 10}–${i * 10 + 10}`, n, ok: i >= 6 }));
+  const total = dist.reduce((a, d) => a + d.n, 0) || 1;
+  const peak = dist.reduce((bi, d, i) => (d.n > dist[bi].n ? i : bi), 0);
 
   return (
     <div className="space-y-6">
@@ -62,7 +65,7 @@ export default function Overview() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Kpi label={t("status_risk")} value={s.risk_topics} tone={s.risk_topics ? "warn" : "good"} icon={<CheckCircle2 className="h-4 w-4" />} note={t("threshold_note")} />
+        <Kpi label={t("status_risk")} value={s.risk_topics} tone={s.risk_topics ? "warn" : "good"} icon={<CheckCircle2 className="h-4 w-4" />} />
         <Kpi label={t("nav_textbooks")} value={s.n_textbooks} icon={<GraduationCap className="h-4 w-4" />} note={`${s.n_schools} ${t("schools")} · ${s.n_classes} ${t("classes")}`} />
         <Kpi label={t("ov_critical")} value={s.critical_topics} tone={s.critical_topics ? "bad" : "good"} icon={<OctagonAlert className="h-4 w-4" />}
           note={`+ ${s.risk_topics} ${t("status_risk").toLowerCase()}`} />
@@ -137,18 +140,26 @@ export default function Overview() {
           </table>
         </Card>
         <Card title={t("ov_dist")} right={<Users className="h-4 w-4 text-muted" />}>
-          <div className="h-56">
+          <Legend items={[{ label: t("chart_below60"), color: C.s1Soft }, { label: t("chart_above60"), color: C.s1 }]} />
+          <ChartFrame height={220} table={{ columns: [t("chart_score_band"), t("students")], rows: dist.map((d) => [`${d.bin}%`, d.n]) }}>
             <ResponsiveContainer>
-              <BarChart data={dist} margin={{ left: -18, right: 8, top: 8 }}>
-                <CartesianGrid vertical={false} stroke="#eef2f6" />
-                <XAxis dataKey="bin" tick={{ fontSize: 11, fill: "#64748b" }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "#64748b" }} tickLine={false} axisLine={false} />
-                <Tooltip cursor={{ fill: "#f1f5f9" }} formatter={(v: number) => [v, t("students")]} />
-                <ReferenceLine x="60–70" stroke="#4f52d1" strokeDasharray="3 3" />
-                <Bar dataKey="n" fill="#4f52d1" radius={[4, 4, 0, 0]} />
+              <BarChart data={dist} margin={{ left: -14, right: 8, top: 18 }} barCategoryGap={2}>
+                <CartesianGrid vertical={false} {...grid} />
+                <XAxis dataKey="bin" {...axis} interval={0} tickFormatter={(v: string) => v.split("–")[0]} />
+                <YAxis {...axisNoLine} allowDecimals={false} />
+                <Tooltip cursor={cursorBand} content={tip((p) => {
+                  const d = p[0].payload;
+                  return { title: `${d.bin}%`, rows: [{ name: t("students"), value: d.n.toLocaleString("ru-RU"), color: d.ok ? C.s1 : C.s1Soft },
+                    { name: t("chart_share"), value: `${fmt((d.n / total) * 100, 1)}%` }] };
+                })} />
+                <Bar dataKey="n" maxBarSize={24} shape={<DataEndBar />} isAnimationActive={false}>
+                  {dist.map((d, i) => <Cell key={i} fill={d.ok ? C.s1 : C.s1Soft} />)}
+                  <LabelList dataKey="n" content={(lp: any) => lp.index === peak ? (
+                    <text x={lp.x + lp.width / 2} y={lp.y - 6} textAnchor="middle" fontSize={11.5} fontWeight={600} fill={C.ink}>{lp.value}</text>) : null} />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </ChartFrame>
         </Card>
       </div>
     </div>
