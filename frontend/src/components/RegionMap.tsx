@@ -53,7 +53,6 @@ export default function RegionMap({ onSelect, selected }: { onSelect?: (d: strin
             { value: "mean_pct", label: t("mean_score") },
             { value: "below", label: t("sc_support") },
           ]} />
-          <span className="text-[11.5px] text-muted">{t("map_schematic")}</span>
         </div>
         <div className="relative grid grid-cols-5 gap-2" style={{ gridTemplateRows: "repeat(4, minmax(78px, 1fr))" }}>
           {Object.entries(TILES).map(([name, [c, r]]) => {

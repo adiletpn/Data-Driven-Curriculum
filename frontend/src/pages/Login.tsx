@@ -118,7 +118,6 @@ export default function Login() {
               </button>
             ))}
           </div>
-          <p className="mt-6 text-center text-[12px] text-slate-400">metodist / demo2026 · director / demo2026 · admin / admin2026</p>
         </div>
       </div>
     </div>

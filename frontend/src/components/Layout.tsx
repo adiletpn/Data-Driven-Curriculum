@@ -147,15 +147,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 options={meta.subjects.map((s) => ({ value: s.subject_id, label: `${L(s, "name")} ${s.grade}` }))} />
             </div>
           )}
-          <div className="hidden text-[13px] text-muted xl:block">{t("app_tagline")}</div>
           <div className="ml-auto flex items-center gap-3">
-            {meta && isRegion && (
-              <span className={cx("hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium sm:inline-flex",
-                meta.source === "synthetic" ? "bg-warn-soft text-warn" : "bg-good-soft text-good")}>
-                <span className={cx("h-1.5 w-1.5 rounded-full", meta.source === "synthetic" ? "bg-warn" : "bg-good")} />
-                {meta.source === "synthetic" ? t("synthetic") : t("uploaded")} · {meta.stats.students.toLocaleString("ru-RU")} {t("students")}
-              </span>
-            )}
             <div data-tour="lang">
               <Segmented size="sm" value={lang} onChange={setLang} options={[{ value: "ru", label: "РУС" }, { value: "kz", label: "ҚАЗ" }]} />
             </div>

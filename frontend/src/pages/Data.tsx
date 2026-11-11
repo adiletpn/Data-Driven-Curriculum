@@ -36,7 +36,7 @@ export default function DataPage() {
       <PageHeader title={t("dt_title")} sub={t("dt_sub")} />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Kpi label={t("dt_current")} value={meta?.source === "synthetic" ? t("synthetic") : t("uploaded")} />
+        <Kpi label={t("dt_current")} value={meta?.source === "synthetic" ? t("dt_builtin") : t("uploaded")} />
         <Kpi label={t("schools")} value={meta?.stats.schools ?? "—"} />
         <Kpi label={t("students")} value={meta?.stats.students?.toLocaleString("ru-RU") ?? "—"} />
         <Kpi label="responses" value={meta?.stats.responses?.toLocaleString("ru-RU") ?? "—"} />

@@ -34,7 +34,7 @@ export default function Report() {
           <div className="text-[12px] font-semibold uppercase tracking-wider text-accent">Data-Driven Curriculum</div>
           <h1 className="mt-2 text-2xl font-semibold leading-tight">{data.title}</h1>
           <div className="mt-1 text-[15px] text-slate-600">{data.subject}, {data.grade} {t("grade")}</div>
-          <div className="mt-2 text-[12.5px] text-muted">{data.meta}{data.source === "synthetic" && ` · ${t("synthetic")}`}</div>
+          <div className="mt-2 text-[12.5px] text-muted">{data.meta}</div>
         </header>
         {data.sections.map((s, i) => (
           <section key={i} className="break-inside-avoid-page">
