@@ -2,6 +2,7 @@ import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import LessonButton from "../components/LessonButton";
 import { Card, cx, ErrorBox, Loading, PageHeader, PctBar, Select, STATUS_COLOR, StatusBadge, Tag } from "../components/ui";
 import { useApi } from "../lib/api";
 import { useApp } from "../lib/app";
@@ -34,7 +35,7 @@ function TopicDetail({ id, onClose }: { id: string; onClose: () => void }) {
     <Card
       title={<span className="flex items-center gap-2">{L(tp, "name")} <StatusBadge s={tp.status} /></span>}
       sub={`${L(tp, "section")} · ${t("tp_rank")}: #${tp.difficulty_rank}`}
-      right={<button onClick={onClose} className="rounded p-1 text-muted hover:bg-slate-100"><X className="h-4 w-4" /></button>}
+      right={<div className="flex items-center gap-1"><LessonButton topicId={id} small /><button onClick={onClose} className="rounded p-1 text-muted hover:bg-slate-100"><X className="h-4 w-4" /></button></div>}
     >
       <div className="space-y-5">
         <div className="grid grid-cols-3 gap-3 text-center">
