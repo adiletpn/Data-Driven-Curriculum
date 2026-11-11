@@ -1,7 +1,7 @@
 import { Award, BookOpen, MapPin, Target, TrendingDown, TrendingUp, Users } from "lucide-react";
 import { FileText, GitCompareArrows } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { C, ChartFrame, DivergingBars, Legend } from "../components/charts";
 import LessonButton from "../components/LessonButton";
 import RiskPanel from "../components/RiskPanel";
 import { Card, cx, Empty, ErrorBox, Kpi, Loading, StatusBadge, Tag } from "../components/ui";
@@ -73,20 +73,13 @@ export default function MySchool() {
 
       <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
         <Card title={t("ms_vs_region")} sub={t("ms_vs_region_sub")}>
-          <div style={{ height: Math.max(300, chart.length * 26) }}>
-            <ResponsiveContainer>
-              <BarChart data={chart} layout="vertical" margin={{ left: 8, right: 16 }}>
-                <CartesianGrid horizontal={false} stroke="#eef2f6" />
-                <XAxis type="number" tick={{ fontSize: 11, fill: "#64748b" }} />
-                <YAxis type="category" dataKey="name" width={230} tick={{ fontSize: 11.5, fill: "#334155" }} />
-                <Tooltip formatter={(v: number) => `${signed(v)} ${t("pp")}`} cursor={{ fill: "#f1f5f9" }} />
-                <ReferenceLine x={0} stroke="#94a3b8" />
-                <Bar dataKey="gap" radius={3} isAnimationActive={false}>
-                  {chart.map((c, i) => <Cell key={i} fill={c.gap >= 0 ? "#16834f" : "#e5484d"} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <Legend items={[{ label: t("chart_above_region"), color: C.pos }, { label: t("chart_below_region"), color: C.neg }]} />
+          <ChartFrame height={chart.length * 28 + 36} table={{ columns: [t("topic"), t("ms_school"), t("ms_region"), "Δ"],
+            rows: data.topics.map((x) => [L(x, "name"), `${fmt(x.school)}%`, `${fmt(x.region)}%`, signed(x.gap)]) }}>
+            <DivergingBars unit={t("pp")} fmtValue={(v) => `${signed(v)} ${t("pp")}`}
+              rows={data.topics.map((x) => ({ name: L(x, "name"), value: x.gap, color: x.gap >= 0 ? C.pos : C.neg,
+                extra: [{ name: t("ms_school"), value: `${fmt(x.school)}%` }, { name: t("ms_region"), value: `${fmt(x.region)}%` }] }))} />
+          </ChartFrame>
         </Card>
 
         <div className="space-y-6">

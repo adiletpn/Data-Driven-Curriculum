@@ -1,6 +1,7 @@
 import { ArrowLeftRight, Award, BookOpen, Info, MapPin, Users } from "lucide-react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { C, ChartFrame, DivergingBars, Legend } from "../components/charts";
 import { Card, cx, ErrorBox, Loading, PageHeader, Tag } from "../components/ui";
 import { useApi } from "../lib/api";
 import { useApp } from "../lib/app";
@@ -21,8 +22,8 @@ interface CompareData {
   raw_gap: number; fair_gap: number; notes_ru: string[]; notes_kz: string[];
 }
 
-const COLOR_A = "#4f52d1";
-const COLOR_B = "#0e8fd6";
+const COLOR_A = C.s1;
+const COLOR_B = C.s2;
 
 function SchoolHead({ s, color, label }: { s: SchoolCard; color: string; label: string }) {
   const { t } = useApp();
@@ -51,23 +52,30 @@ function SchoolHead({ s, color, label }: { s: SchoolCard; color: string; label: 
 
 function BetterList({ title, items, color }: { title: string; items: TopicCmp[]; color: string }) {
   const { t, L, lang } = useApp();
+  const [all, setAll] = useState(false);
+  const shown = all ? items : items.slice(0, 5);
   return (
     <Card title={<span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />{title}</span>}>
       {items.length === 0 ? <div className="text-[13px] text-muted">{t("cmp_none")}</div> : (
         <ul className="space-y-2.5">
-          {items.map((x) => {
+          {shown.map((x) => {
             const why = (lang === "kz" ? x.why_kz : x.why_ru) ?? [];
             return (
               <li key={x.topic_id} className="rounded-xl border border-black/[0.06] bg-white/60 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-[13.5px] font-medium">{L(x, "name")}</span>
-                  <span className="whitespace-nowrap text-[14px] font-semibold" style={{ color }}>+{fmt(Math.abs(x.diff))} {t("pp")}</span>
+                  <span className="whitespace-nowrap text-[14px] font-semibold text-ink">+{fmt(Math.abs(x.diff))} {t("pp")}</span>
                 </div>
                 <div className="mt-0.5 text-[12px] text-muted">{fmt(x.a)}% · {fmt(x.b)}%</div>
                 {why.length > 0 && <div className="mt-1.5 text-[12.5px] text-slate-600">↳ {why.join("; ")}</div>}
               </li>
             );
           })}
+          {items.length > 5 && (
+            <button className="w-full pt-1 text-[13px] font-medium text-accent hover:underline" onClick={() => setAll((v) => !v)}>
+              {all ? t("show_less") : `${t("show_all")} (${items.length})`}
+            </button>
+          )}
         </ul>
       )}
     </Card>
@@ -94,7 +102,7 @@ export default function Compare() {
     </label>
   );
 
-  const chart = (data?.topics ?? []).map((x) => ({ name: L(x, "name"), diff: x.diff, sig: x.significant }));
+  const chart = data?.topics ?? [];
 
   return (
     <div className="space-y-6">
@@ -124,27 +132,23 @@ export default function Compare() {
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+
+          <Card title={t("cmp_chart")}>
+            <Legend items={[{ label: `${t("cmp_better")} ${data.a.name}`, color: COLOR_A }, { label: `${t("cmp_better")} ${data.b.name}`, color: COLOR_B },
+              { label: t("not_significant"), color: C.neutral, faded: true }]} />
+            <ChartFrame height={chart.length * 28 + 36} table={{ columns: [t("topic"), data.a.name, data.b.name, "Δ", "p"],
+              rows: data.topics.map((x) => [L(x, "name"), `${fmt(x.a)}%`, `${fmt(x.b)}%`, signed(x.diff), fmt(x.p, 3)]) }}>
+              <DivergingBars unit={`A − B, ${t("pp")}`} fmtValue={(v) => `${signed(v)} ${t("pp")}`}
+                rows={data.topics.map((x) => ({ name: L(x, "name"), value: x.diff, color: x.diff >= 0 ? COLOR_A : COLOR_B, faded: !x.significant,
+                  extra: [{ name: data.a.name, value: `${fmt(x.a)}%` }, { name: data.b.name, value: `${fmt(x.b)}%` },
+                    { name: "p", value: fmt(x.p, 3), muted: true }] }))} />
+            </ChartFrame>
+          </Card>
+
+          <div className="grid items-start gap-6 lg:grid-cols-2">
             <BetterList title={`${t("cmp_better")} ${data.a.name}`} items={data.better_a} color={COLOR_A} />
             <BetterList title={`${t("cmp_better")} ${data.b.name}`} items={data.better_b} color={COLOR_B} />
           </div>
-
-          <Card title={t("cmp_chart")} sub={t("cmp_chart_sub")}>
-            <div style={{ height: Math.max(300, chart.length * 26) }}>
-              <ResponsiveContainer>
-                <BarChart data={chart} layout="vertical" margin={{ left: 8, right: 16 }}>
-                  <CartesianGrid horizontal={false} stroke="#eef0f3" />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: "#63636b" }} />
-                  <YAxis type="category" dataKey="name" width={240} tick={{ fontSize: 11.5, fill: "#3f3f46" }} />
-                  <Tooltip formatter={(v: number) => `${signed(v)} ${t("pp")}`} cursor={{ fill: "rgba(0,0,0,.03)" }} />
-                  <ReferenceLine x={0} stroke="#a1a1aa" />
-                  <Bar dataKey="diff" radius={4} isAnimationActive={false}>
-                    {chart.map((c, i) => <Cell key={i} fill={c.diff >= 0 ? COLOR_A : COLOR_B} fillOpacity={c.sig ? 1 : 0.3} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
         </>
       )}
     </div>
