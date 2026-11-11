@@ -1,4 +1,3 @@
-import "@fontsource-variable/inter";
 import { ShieldAlert } from "lucide-react";
 import React, { type ReactNode } from "react";
 import ReactDOM from "react-dom/client";
