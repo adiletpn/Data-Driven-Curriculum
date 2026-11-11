@@ -1,3 +1,4 @@
+import { usePersistentState } from "../lib/persist";
 import { useState } from "react";
 import { useApi } from "../lib/api";
 import { useApp } from "../lib/app";
@@ -35,7 +36,7 @@ function color(metric: Metric, v: number | null, all: number[]) {
 export default function RegionMap({ onSelect, selected }: { onSelect?: (d: string | null) => void; selected?: string | null }) {
   const { t, subject, L } = useApp();
   const { data } = useApi<District[]>(subject ? `/api/districts?subject=${subject}` : null);
-  const [metric, setMetric] = useState<Metric>("value_added");
+  const [metric, setMetric] = usePersistentState<Metric>("map.metric", "value_added");
   const [hover, setHover] = useState<string | null>(null);
   if (!data) return <div className="h-72" />;
   const byName = new Map(data.map((d) => [d.district, d]));

@@ -1,3 +1,4 @@
+import { usePersistentState } from "../lib/persist";
 import { ArrowDownRight, ArrowUpRight, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -13,8 +14,8 @@ export default function Schools() {
   const { data, error, loading } = useApi<SchoolsData>(subject ? `/api/schools?subject=${subject}` : null);
   const [q, setQ] = useState("");
   const nav = useNavigate();
-  const [cat, setCat] = useState<"all" | "below" | "above">("all");
-  const [district, setDistrict] = useState<string | null>(null);
+  const [cat, setCat] = usePersistentState<"all" | "below" | "above">("schools.cat", "all");
+  const [district, setDistrict] = usePersistentState<string | null>("schools.district", null);
   const rows = useMemo(() => (data?.schools ?? []).filter((s) =>
     (cat === "all" || s.category === cat) && (!district || s.district === district) &&
     (!q || `${s.name} ${s.district}`.toLowerCase().includes(q.toLowerCase()))), [data, q, cat, district]);

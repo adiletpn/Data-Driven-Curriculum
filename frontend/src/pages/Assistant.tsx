@@ -1,3 +1,4 @@
+import { usePersistentState } from "../lib/persist";
 import { Bot, Loader2, Send, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -10,12 +11,11 @@ interface Msg { role: "user" | "assistant"; content: string; mode?: string }
 export default function Assistant() {
   const { t, subject, lang } = useApp();
   const { data: status } = useApi<{ available: boolean }>("/api/ai/status");
-  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [msgs, setMsgs] = usePersistentState<Msg[]>(`assistant.${subject}`, []);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
   const end = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setMsgs([]); }, [subject]);
   useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, busy]);
 
   const ask = async (question: string) => {
@@ -39,7 +39,10 @@ export default function Assistant() {
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader title={t("ai_title")} sub={t("ai_sub")}
-        right={status && <Tag tone={status.available ? "good" : "warn"}>{status.available ? t("ai_online") : t("ai_offline")}</Tag>} />
+        right={<div className="flex items-center gap-2">
+          {status && <Tag tone={status.available ? "good" : "warn"}>{status.available ? t("ai_online") : t("ai_offline")}</Tag>}
+          {msgs.length > 0 && <button className="btn px-2.5 py-1 text-[12px]" onClick={() => setMsgs([])}>{t("ai_clear")}</button>}
+        </div>} />
       <Card pad={false}>
         <div className="flex h-[calc(100vh-280px)] min-h-[420px] flex-col">
           <div className="flex-1 space-y-4 overflow-y-auto p-5">

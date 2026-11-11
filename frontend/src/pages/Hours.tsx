@@ -1,3 +1,4 @@
+import { usePersistentState } from "../lib/persist";
 import { Minus, Plus, RotateCcw, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Scatter, Tooltip, XAxis, YAxis } from "recharts";
@@ -45,11 +46,11 @@ function Curve({ tp }: { tp: HoursTopic }) {
 
 export default function Hours() {
   const { t, subject, L, meta, tbTitle } = useApp();
-  const [mode, setMode] = useState<Mode>("balanced");
-  const [flex, setFlex] = useState(0.3);
-  const [scope, setScope] = useState("");
+  const [mode, setMode] = usePersistentState<Mode>("hours.mode", "balanced");
+  const [flex, setFlex] = usePersistentState("hours.flex", 0.3);
+  const [scope, setScope] = usePersistentState("hours.scope", "");
   const [sel, setSel] = useState<string | null>(null);
-  const [custom, setCustom] = useState<Record<string, number> | null>(null);
+  const [custom, setCustom] = usePersistentState<Record<string, number> | null>(`hours.custom.${subject}.${scope}`, null);
   const [whatif, setWhatif] = useState<HoursData | null>(null);
 
   const scopeParams = useMemo(() => {
@@ -60,7 +61,7 @@ export default function Hours() {
   const q = new URLSearchParams({ subject, mode, flex: String(flex), ...scopeParams });
   const { data, error, loading } = useApi<HoursData>(subject ? `/api/hours?${q}` : null);
 
-  useEffect(() => { setCustom(null); setWhatif(null); setSel(null); }, [subject, scope]);
+  useEffect(() => { setWhatif(null); setSel(null); }, [subject, scope]);
   useEffect(() => {
     if (!custom) return;
     const id = setTimeout(() => {

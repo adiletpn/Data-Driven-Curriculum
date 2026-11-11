@@ -1,3 +1,4 @@
+import { usePersistentState } from "../lib/persist";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -141,10 +142,10 @@ export default function Topics() {
   const { t, subject, L, meta, tbTitle } = useApp();
   const [params, setParams] = useSearchParams();
   const sel = params.get("id");
-  const [locality, setLocality] = useState("");
-  const [language, setLanguage] = useState("");
-  const [textbook, setTextbook] = useState("");
-  const [sort, setSort] = useState<{ k: SortKey; asc: boolean }>({ k: "order", asc: true });
+  const [locality, setLocality] = usePersistentState("topics.locality", "");
+  const [language, setLanguage] = usePersistentState("topics.language", "");
+  const [textbook, setTextbook] = usePersistentState(`topics.textbook.${subject}`, "");
+  const [sort, setSort] = usePersistentState<{ k: SortKey; asc: boolean }>("topics.sort", { k: "order", asc: true });
   const q = new URLSearchParams({ subject, ...(locality && { locality }), ...(language && { language }), ...(textbook && { textbook_id: textbook }) });
   const { data, error, loading } = useApi<TopicRow[]>(subject ? `/api/topics?${q}` : null);
 

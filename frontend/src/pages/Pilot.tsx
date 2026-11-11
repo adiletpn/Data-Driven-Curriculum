@@ -1,3 +1,4 @@
+import { usePersistentState } from "../lib/persist";
 import { CheckCircle2, FlaskConical, School, Target, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -17,10 +18,9 @@ interface Plan {
 
 export default function Pilot() {
   const { t, subject, L, tbTitle } = useApp();
-  const [topic, setTopic] = useState("");
-  const [effect, setEffect] = useState<number | null>(null);
-  const [power, setPower] = useState("0.8");
-  useEffect(() => { setTopic(""); setEffect(null); }, [subject]);
+  const [topic, setTopic] = usePersistentState(`pilot.topic.${subject}`, "");
+  const [effect, setEffect] = usePersistentState<number | null>(`pilot.effect.${subject}`, null);
+  const [power, setPower] = usePersistentState("pilot.power", "0.8");
   const q = new URLSearchParams({ subject, power, ...(topic && { topic_id: topic }), ...(effect != null && { effect_pp: String(effect) }) });
   const { data, error, loading } = useApi<Plan>(subject ? `/api/pilot?${q}` : null);
   if (error) return <ErrorBox msg={error} />;
