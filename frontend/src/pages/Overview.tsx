@@ -27,7 +27,7 @@ export default function Overview() {
 
   return (
     <div className="space-y-6">
-      <div className="hero rounded-3xl p-6 text-white md:p-8">
+      <div data-tour="hero" className="hero rounded-3xl p-6 text-white md:p-8">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="max-w-2xl">
             <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-white/60">{t("ov_title")}</div>
@@ -71,6 +71,7 @@ export default function Overview() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.15fr_1fr]">
+        <div data-tour="findings">
         <Card title={t("ov_findings")} sub={t("ov_findings_sub")} pad={false}>
           <ul className="divide-y divide-slate-100">
             {(showAll ? data.insights : data.insights.slice(0, 6)).map((i) => (
@@ -92,6 +93,7 @@ export default function Overview() {
             </button>
           )}
         </Card>
+        </div>
 
         <Card title={t("ov_by_topic")} sub={t("mastered_share")}>
           <div className="space-y-4">

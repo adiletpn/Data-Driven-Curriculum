@@ -1,11 +1,12 @@
 import {
   BarChart3, BookOpen, Bot, Building2, ClipboardCheck, Clock, Database, FileText, FlaskConical, LayoutDashboard,
-  LogOut, Menu, Network, School, Scale, Target, X,
+  GitCompareArrows, HelpCircle, LogOut, Menu, Network, School, Scale, Target, X,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useApp, type Role } from "../lib/app";
 import type { Key } from "../lib/i18n";
+import Tour, { TOUR_EVENT } from "./Tour";
 import { cx, Segmented } from "./ui";
 
 const R: Role[] = ["admin", "methodologist"];
@@ -29,6 +30,7 @@ export const NAV: { group: Key; items: { to: string; key: Key; icon: ReactNode; 
       { to: "/hours", key: "nav_hours", icon: <Clock className="h-4 w-4" />, roles: R },
       { to: "/pilot", key: "nav_pilot", icon: <Target className="h-4 w-4" />, roles: R },
       { to: "/schools", key: "nav_schools", icon: <School className="h-4 w-4" />, roles: R },
+      { to: "/compare", key: "nav_compare", icon: <GitCompareArrows className="h-4 w-4" />, roles: R },
       { to: "/equity", key: "nav_equity", icon: <Scale className="h-4 w-4" />, roles: R },
     ],
   },
@@ -45,7 +47,7 @@ export const NAV: { group: Key; items: { to: string; key: Key; icon: ReactNode; 
 
 export function allowed(path: string, role: Role | undefined) {
   if (!role) return false;
-  if (path === "/school") return true; // directors: own school; region roles: any school card
+  if (path === "/school" || path === "/school-report") return true; // own school for directors, any for region roles
   const item = NAV.flatMap((g) => g.items).find((i) => i.to === path);
   return !item || item.roles.includes(role);
 }
@@ -80,7 +82,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
               <div className="mb-1.5 px-3 text-[11.5px] font-semibold uppercase tracking-[0.04em] text-faint">{t(g.group)}</div>
               <div className="flex flex-col gap-0.5">
                 {items.map((i) => (
-                  <NavLink key={i.to} to={i.to} end={i.to === "/"} onClick={onNavigate}
+                  <NavLink key={i.to} to={i.to} end={i.to === "/"} onClick={onNavigate} data-tour={`nav-${i.to}`}
                     className={({ isActive }) => cx("nav-item", isActive && "nav-item-active")}>
                     {i.icon}
                     {t(i.key)}
@@ -140,8 +142,10 @@ export default function Layout({ children }: { children: ReactNode }) {
             <Menu className="h-5 w-5" />
           </button>
           {meta && (
-            <Segmented value={subject} onChange={setSubject}
-              options={meta.subjects.map((s) => ({ value: s.subject_id, label: `${L(s, "name")} ${s.grade}` }))} />
+            <div data-tour="subject">
+              <Segmented value={subject} onChange={setSubject}
+                options={meta.subjects.map((s) => ({ value: s.subject_id, label: `${L(s, "name")} ${s.grade}` }))} />
+            </div>
           )}
           <div className="hidden text-[13px] text-muted xl:block">{t("app_tagline")}</div>
           <div className="ml-auto flex items-center gap-3">
@@ -152,9 +156,16 @@ export default function Layout({ children }: { children: ReactNode }) {
                 {meta.source === "synthetic" ? t("synthetic") : t("uploaded")} · {meta.stats.students.toLocaleString("ru-RU")} {t("students")}
               </span>
             )}
-            <Segmented size="sm" value={lang} onChange={setLang} options={[{ value: "ru", label: "РУС" }, { value: "kz", label: "ҚАЗ" }]} />
+            <div data-tour="lang">
+              <Segmented size="sm" value={lang} onChange={setLang} options={[{ value: "ru", label: "РУС" }, { value: "kz", label: "ҚАЗ" }]} />
+            </div>
+            <button onClick={() => window.dispatchEvent(new Event(TOUR_EVENT))} title={t("tour_again")}
+              className="grid h-8 w-8 place-items-center rounded-[10px] border border-black/[0.08] bg-white/70 text-muted transition hover:text-ink">
+              <HelpCircle className="h-4 w-4" />
+            </button>
           </div>
         </header>
+        <Tour />
         <main key={loc.pathname} className={cx("page-enter print-area mx-auto w-full flex-1 px-4 py-6 md:px-8 md:py-8", wide ? "max-w-[1600px]" : "max-w-[1320px]")}>
           {children}
         </main>
