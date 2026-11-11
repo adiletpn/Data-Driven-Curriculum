@@ -16,5 +16,7 @@ COPY backend/ ./
 COPY --from=web /web/dist /app/frontend/dist
 # generate the synthetic demo dataset at build time (deterministic, seed 42)
 RUN python -m app.data.generator
+# precompute all analytics into an on-disk cache so even the first request after a deploy is instant
+RUN python -c "from app.main import _warmup; _warmup()" && ls -la data/cache
 EXPOSE 8000
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
