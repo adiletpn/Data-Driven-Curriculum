@@ -2,6 +2,7 @@ import { usePersistentState } from "../lib/persist";
 import { Minus, Plus, RotateCcw, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Scatter, Tooltip, XAxis, YAxis } from "recharts";
+import { axis, axisNoLine, C, ChartFrame, cursorLine, grid, Legend, RingDot, tip } from "../components/charts";
 import { Card, cx, ErrorBox, Kpi, Loading, Note, PageHeader, Segmented, Select, StatusBadge, Tag } from "../components/ui";
 import { post, useApi } from "../lib/api";
 import { useApp } from "../lib/app";
@@ -13,28 +14,43 @@ type Mode = "balanced" | "foundation" | "equity";
 function Curve({ tp }: { tp: HoursTopic }) {
   const { t, L } = useApp();
   const data = tp.curve.map((c) => ({ h: c.h, m: c.m, band: [c.lo, c.hi] as [number, number] }));
+  // deterministic horizontal jitter so classes with the same hours don't sit on top of each other
+  const scatter = tp.scatter.map((d, i) => ({ h: d.h + (((i * 37) % 11) - 5) * 0.035, m: d.m }));
   const ys = [...tp.scatter.map((s) => s.m), ...tp.curve.map((c) => c.lo), ...tp.curve.map((c) => c.hi)];
   const lo = Math.max(0, Math.floor(Math.min(...ys) / 10) * 10), hi = Math.min(100, Math.ceil(Math.max(...ys) / 10) * 10);
   return (
-    <Card title={`${t("hr_curve")}: ${L(tp, "name")}`} sub={t("hr_curve_sub")}>
-      <div className="h-72">
+    <Card title={`${t("hr_curve")}: ${L(tp, "name")}`}>
+      <Legend items={[{ label: t("chart_model"), color: C.s1, kind: "line" }, { label: t("chart_interval"), color: "rgba(79,82,209,.18)" },
+        { label: t("chart_classes"), color: C.neutral, kind: "dot" }]} />
+      <ChartFrame height={280} table={{ columns: [t("hours_short"), t("chart_model"), t("chart_interval")],
+        rows: tp.curve.map((c) => [c.h, `${fmt(c.m)}%`, `${fmt(c.lo)}–${fmt(c.hi)}%`]) }}>
         <ResponsiveContainer>
-          <ComposedChart data={data} margin={{ left: -10, right: 12, top: 22, bottom: 4 }}>
-            <CartesianGrid stroke="#eef2f6" />
-            <XAxis dataKey="h" type="number" domain={["dataMin - 0.5", "dataMax + 0.5"]} ticks={tp.curve.map((c) => c.h)} tick={{ fontSize: 11, fill: "#64748b" }} allowDecimals={false}
-              label={{ value: t("hours_short"), position: "insideBottomRight", offset: -2, fontSize: 11, fill: "#64748b" }} />
-            <YAxis domain={[lo, hi]} tick={{ fontSize: 11, fill: "#64748b" }} unit="%" />
-            <Tooltip formatter={(v: any) => (Array.isArray(v) ? `${fmt(v[0])}–${fmt(v[1])}%` : `${fmt(v)}%`)} labelFormatter={(h) => `${h} ${t("hours_short")}`} />
-            <Area dataKey="band" stroke="none" fill="#4f52d1" fillOpacity={0.12} isAnimationActive={false} />
-            <Scatter data={tp.scatter} dataKey="m" fill="#94a3b8" fillOpacity={0.55} shape="circle" isAnimationActive={false} />
-            <Line dataKey="m" stroke="#4f52d1" strokeWidth={2.5} dot={false} isAnimationActive={false} />
-            <ReferenceLine x={tp.planned} stroke="#64748b" strokeDasharray="4 3" label={{ value: t("hr_plan"), fontSize: 10, fill: "#64748b", position: "top" }} />
+          <ComposedChart data={data} margin={{ left: -10, right: 14, top: 22, bottom: 2 }}>
+            <CartesianGrid vertical={false} {...grid} />
+            <XAxis dataKey="h" type="number" domain={["dataMin - 0.5", "dataMax + 0.5"]} ticks={tp.curve.map((c) => c.h)} {...axis} allowDecimals={false}
+              tickFormatter={(v: number) => `${v} ${t("hours_short")}`} />
+            <YAxis domain={[lo, hi]} ticks={Array.from({ length: Math.floor((hi - lo) / (hi - lo > 60 ? 20 : 10)) + 1 }, (_, i) => lo + i * (hi - lo > 60 ? 20 : 10))}
+              {...axisNoLine} tickFormatter={(v: number) => `${v}%`} />
+            <Tooltip cursor={cursorLine} content={tip((p) => {
+              const row = p.find((x: any) => x.dataKey === "m" && x.payload.band)?.payload;
+              if (!row) return null;
+              return { title: `${row.h} ${t("hours_short")}`, rows: [
+                { name: t("chart_model"), value: `${fmt(row.m)}%`, color: C.s1 },
+                { name: t("chart_interval"), value: `${fmt(row.band[0])}–${fmt(row.band[1])}%`, muted: true }] };
+            })} />
+            <Area dataKey="band" stroke="none" fill={C.s1} fillOpacity={0.1} isAnimationActive={false} activeDot={false} />
+            <Scatter data={scatter} dataKey="m" fill={C.neutral} shape={<RingDot r={3.5} />} isAnimationActive={false} />
+            <Line dataKey="m" stroke={C.s1} strokeWidth={2} strokeLinecap="round" dot={false}
+              activeDot={<RingDot fill={C.s1} r={5} />} isAnimationActive={false} />
+            <ReferenceLine x={tp.planned} stroke={C.axis} strokeWidth={1}
+              label={{ value: t("hr_plan"), fontSize: 11, fill: C.muted, position: "top" }} />
             {tp.recommended !== tp.planned && (
-              <ReferenceLine x={tp.recommended} stroke={tp.delta > 0 ? "#16834f" : "#cc3340"} strokeWidth={2} label={{ value: t("hr_rec"), fontSize: 10, fill: tp.delta > 0 ? "#16834f" : "#cc3340", position: "top" }} />
+              <ReferenceLine x={tp.recommended} stroke={C.s1} strokeWidth={1.5}
+                label={{ value: `${t("hr_rec")} ${tp.recommended}`, fontSize: 11, fontWeight: 600, fill: C.ink, position: "top" }} />
             )}
           </ComposedChart>
         </ResponsiveContainer>
-      </div>
+      </ChartFrame>
       <div className="mt-3 grid grid-cols-3 gap-2 text-center text-[12px]">
         <div className="rounded-lg bg-slate-50 p-2"><div className="text-muted">{t("hr_return")}</div><b>{fmt(tp.marginal_pp_per_hour, 2)} {t("pp")}/{t("hours_short")}</b><div className="text-[11px] text-muted">{t("ci95")} {fmt(tp.marginal_ci[0], 2)}–{fmt(tp.marginal_ci[1], 2)}</div></div>
         <div className="rounded-lg bg-slate-50 p-2"><div className="text-muted">{t("hr_forecast")}</div><b>{fmt(tp.predicted_plan)} → {fmt(tp.predicted_rec)}%</b><div className="text-[11px] text-muted">{signed(tp.predicted_change, 2)} {t("pp")}</div></div>
@@ -175,10 +191,12 @@ export default function Hours() {
                       {!custom && (
                         <td>
                           <div className="relative h-4" style={{ width: 84 }}>
-                            <div className="absolute inset-y-0 left-1/2 w-px bg-slate-300" />
+                            <div className="absolute inset-y-0 left-1/2 w-px bg-black/[0.15]" />
                             {x.delta !== 0 && (
-                              <div className={cx("absolute inset-y-0.5 rounded", x.delta > 0 ? "bg-good" : "bg-bad")}
-                                style={x.delta > 0 ? { left: "50%", width: `${(x.delta / maxDelta) * 48}%` } : { right: "50%", width: `${(-x.delta / maxDelta) * 48}%` }} />
+                              <div className="absolute top-1/2 h-2 -translate-y-1/2"
+                                style={x.delta > 0
+                                  ? { left: "calc(50% + 1px)", width: `${(x.delta / maxDelta) * 46}%`, background: "#4f52d1", borderRadius: "0 4px 4px 0" }
+                                  : { right: "calc(50% + 1px)", width: `${(-x.delta / maxDelta) * 46}%`, background: "#e34948", borderRadius: "4px 0 0 4px" }} />
                             )}
                           </div>
                         </td>
