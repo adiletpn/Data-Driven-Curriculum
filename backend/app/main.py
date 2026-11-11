@@ -473,6 +473,9 @@ def _warmup():
             risk_mod.models(ds, sj)
             for lang in ("ru", "kz"):
                 build_report(ds, sj, lang)
+            # school cards use hours fitted for the school's own textbook
+            for tb in ds.classes.loc[ds.classes["subject_id"] == sj, "textbook_id"].unique():
+                hours_mod.optimize(ds, sj, filters={"textbook_id": tb})
         validation_mod.run(ds)
         save(ds)
     except Exception as e:  # pragma: no cover - warm-up is best effort
