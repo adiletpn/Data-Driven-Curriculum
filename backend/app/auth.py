@@ -22,7 +22,9 @@ from pathlib import Path
 from fastapi import Depends, Header, HTTPException, Query
 
 ROOT = Path(__file__).resolve().parents[1]
-USERS_FILE = ROOT / "data" / "users.json"
+from .data.diskcache import persist_dir
+
+USERS_FILE = persist_dir() / "users.json"
 TOKEN_TTL = 12 * 3600
 SECRET = (os.environ.get("DDC_SECRET") or "ddc-dev-secret-change-me").encode()
 

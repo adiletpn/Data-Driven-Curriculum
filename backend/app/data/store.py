@@ -13,8 +13,10 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA_DIR = ROOT / "data"
-SYNTH_DIR = DATA_DIR / "synthetic"
+from .diskcache import load as cache_load, persist_dir
+
+SYNTH_DIR = ROOT / "data" / "synthetic"      # demo data, shipped with the image
+DATA_DIR = persist_dir()                     # persistent: uploads, users, analytics cache
 ACTIVE_DIR = DATA_DIR / "active"
 
 MASTERY_THRESHOLD = 0.6  # student "усвоил тему" if >= 60% of the topic items are correct
@@ -283,6 +285,8 @@ def load_dir(path: Path, source: str, version: int) -> Dataset:
     ds = Dataset(tables=tables, source=source, version=version,
                  ground_truth=json.loads(gt.read_text()) if gt.exists() else None)
     ds.validation = report  # type: ignore[attr-defined]
+    ds.path = path  # type: ignore[attr-defined]
+    cache_load(ds)  # instant start when results for exactly this data + code were computed before
     return ds
 
 
