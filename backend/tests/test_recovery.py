@@ -75,3 +75,23 @@ def test_root_causes_point_to_prerequisites(ds):
 def test_school_value_added_is_shrunk(ds):
     va = schools.value_added(ds, "ALG7")["schools"]
     assert all(abs(s["value_added"]) <= abs(s["raw_value_added"]) + 1e-6 for s in va)
+
+
+def test_textbook_switch_effects_recovered_by_did(ds):
+    v = validation.run(ds)
+    assert v["switching"], "history table must produce switch estimates"
+    assert all(x["covered"] for x in v["switching"])
+    assert v["summary"]["switch_mae"] < v["summary"]["switch_naive_mae"]
+
+
+def test_early_warning_beats_chance(ds):
+    from app.analytics.risk import school_risk
+    r = school_risk(ds, "ALG7", "S072")
+    assert r["model_auc"] > 0.7
+
+
+def test_pilot_planner_sizes_scale_with_effect(ds):
+    from app.analytics.pilot import plan
+    small, big = plan(ds, "GEO7", effect_pp=3), plan(ds, "GEO7", effect_pp=9)
+    assert big["schools_total"] < small["schools_total"]
+    assert all(p["pilot"]["textbook_id"] == p["control"]["textbook_id"] for p in big["pairs"])
