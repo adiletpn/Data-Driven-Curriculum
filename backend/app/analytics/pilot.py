@@ -78,9 +78,7 @@ def plan(ds, subject_id: str, topic_id: str | None = None, effect_pp: float | No
         se = math.sqrt(2 * var_adj * deff / (n_per_arm * m))
         return float(stats.norm.cdf(delta / se - za))
 
-    n_available = int(s["school_id"].nunique())
-    curve = [dict(schools=2 * n, power=r(power_at(n), 3)) for n in range(3, max(per_arm * 2, 12) + 1, max(1, per_arm // 8))]
-    mde_all = (za + zb) * math.sqrt(2 * var_adj * deff / ((n_available // 2) * m)) * 100
+    n_total = int(s["school_id"].nunique())
 
     # matched pairs among schools that need it most (low mastery of the topic first)
     sch = (s.groupby("school_id").agg(mastery=("pct", "mean"), n=("pct", "size"), baseline=("baseline_score", "mean"))
@@ -100,6 +98,9 @@ def plan(ds, subject_id: str, topic_id: str | None = None, effect_pp: float | No
             pairs.append(dict(pilot=a, control=b, need=float(1 - (g.loc[a, "mastery"] + g.loc[b, "mastery"]) / 2)))
     pairs.sort(key=lambda p: -p["need"])
     chosen = pairs[:per_arm]
+    n_available = 2 * len(pairs)  # schools that have a comparable partner
+    curve = [dict(schools=2 * n, power=r(power_at(n), 3)) for n in range(3, max(per_arm * 2, 12) + 1, max(1, per_arm // 8))]
+    mde_all = (za + zb) * math.sqrt(2 * var_adj * deff / (max(len(pairs), 1) * m)) * 100
 
     def card(sid):
         x = sch.loc[sid]
@@ -114,8 +115,8 @@ def plan(ds, subject_id: str, topic_id: str | None = None, effect_pp: float | No
                          predicted_change=x["predicted_change"]) for x in candidates],
         effect_pp=r(effect_pp, 2), power=power, alpha=alpha,
         icc=r(icc, 3), r2_baseline=r(r2, 3), students_per_school=r(m, 1), design_effect=r(deff, 2),
-        schools_per_arm=per_arm, schools_total=2 * per_arm, schools_available=n_available,
-        feasible=bool(2 * per_arm <= len(pairs) * 2),
+        schools_per_arm=per_arm, schools_total=2 * per_arm, schools_available=n_available, schools_in_region=n_total,
+        feasible=bool(per_arm <= len(pairs)),
         mde_all_schools=r(mde_all, 2), power_curve=curve,
         pairs=[dict(pilot=card(p["pilot"]), control=card(p["control"])) for p in chosen],
     )
