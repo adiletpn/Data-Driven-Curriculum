@@ -3,7 +3,7 @@ import { Bar, BarChart, CartesianGrid, Cell, Legend, ReferenceLine, ResponsiveCo
 import { Card, Empty, ErrorBox, Kpi, Loading, PageHeader, Tag } from "../components/ui";
 import { useApi } from "../lib/api";
 import { useApp } from "../lib/app";
-import { fmt } from "../lib/i18n";
+import { fmt, signed } from "../lib/i18n";
 
 interface V {
   summary: Record<string, number | boolean | null>;
@@ -12,10 +12,11 @@ interface V {
   items: { planted: string[]; flagged: string[]; precision: number; recall: number; wrong_key_found: string[] };
   policy: { subject_id: string; hours_moved: number; ours: number; heuristic: number; oracle: number }[];
   language: { subject_id: string; planted: boolean; detected: boolean; p: number }[];
+  switching?: { subject_id: string; from_textbook: string; to_textbook: string; true: number; did: number; ci: [number, number]; naive: number; covered: boolean }[];
 }
 
 export default function Validation() {
-  const { t, meta, lang } = useApp();
+  const { t, meta, lang, tbTitle } = useApp();
   const { data, error, loading } = useApi<V>(meta?.has_ground_truth ? "/api/validation" : null);
   if (meta && !meta.has_ground_truth) return <div><PageHeader title={t("vl_title")} /><Empty>{t("vl_only_synth")}</Empty></div>;
   if (error) return <ErrorBox msg={error} />;
@@ -118,6 +119,25 @@ export default function Validation() {
           </div>
         </Card>
       </div>
+      {data.switching && data.switching.length > 0 && (
+        <Card title={t("vl_switch")} sub={t("sw_sub")} pad={false}>
+          <table className="tbl">
+            <thead><tr><th>{t("textbook")}</th><th className="num">{t("vl_true")}</th><th className="num">{t("vl_ours")}</th><th className="num">{t("ci95")}</th><th className="num">{t("vl_naive")}</th><th></th></tr></thead>
+            <tbody>
+              {data.switching.map((x) => (
+                <tr key={x.subject_id + x.from_textbook + x.to_textbook}>
+                  <td className="font-medium">{tbTitle(x.from_textbook)} → {tbTitle(x.to_textbook)}</td>
+                  <td className="num font-semibold">{signed(x.true)}</td>
+                  <td className="num font-semibold text-good">{signed(x.did)}</td>
+                  <td className="num text-muted">{fmt(x.ci[0])} … {fmt(x.ci[1])}</td>
+                  <td className="num text-warn">{signed(x.naive)}</td>
+                  <td>{x.covered ? <CheckCircle2 className="h-4 w-4 text-good" /> : <XCircle className="h-4 w-4 text-bad" />}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
     </div>
   );
 }
