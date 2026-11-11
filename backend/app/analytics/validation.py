@@ -125,6 +125,19 @@ def run(ds) -> dict | None:
                 out["topics"].append(dict(subject_id=sj, topic_id=t["topic_id"], true=true_m.get(t["topic_id"]),
                                           estimated=t["mean_pct"]))
 
+        # ---- before/after textbook change (difference-in-differences) ----
+        from .switching import analyze as switch_analyze
+        out["switching"] = []
+        for t in gt.get("textbook_switch", []):
+            res = switch_analyze(ds, t["subject_id"])
+            est = next((x for x in (res or {}).get("switches", [])
+                        if x["from_textbook"] == t["from_textbook"] and x["to_textbook"] == t["to_textbook"]), None)
+            if est:
+                out["switching"].append(dict(subject_id=t["subject_id"], from_textbook=t["from_textbook"],
+                                             to_textbook=t["to_textbook"], true=t["att_pp"], did=est["did"], ci=est["ci"],
+                                             naive=est["naive_after_diff"],
+                                             covered=bool(est["ci"][0] <= t["att_pp"] <= est["ci"][1])))
+
         out["policy"] = policy
         out["summary"] = dict(
             textbook_mae_adjusted=r(mae_adj, 2), textbook_mae_naive=r(mae_naive, 2),
@@ -138,6 +151,9 @@ def run(ds) -> dict | None:
             items_precision=out["items"]["precision"], items_recall=out["items"]["recall"],
             dependency_spearman=_spearman([x["excess"] for x in dd], [x["true_rho"] for x in dd]),
             difficulty_corr=_corr([x["estimated"] for x in out["topics"]], [x["true"] for x in out["topics"]]),
+            switch_mae=r(np.mean([abs(x["did"] - x["true"]) for x in out["switching"]]), 2) if out["switching"] else None,
+            switch_naive_mae=r(np.mean([abs(x["naive"] - x["true"]) for x in out["switching"]]), 2) if out["switching"] else None,
+            switch_coverage=r(np.mean([x["covered"] for x in out["switching"]]), 2) if out["switching"] else None,
             language_detected=all(x["detected"] == x["planted"] for x in out["language"]) if out["language"] else None,
         )
         return out
