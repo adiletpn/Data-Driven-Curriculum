@@ -170,6 +170,27 @@ def school_risk(school_id: str, subject: str | None = None, threshold: float = Q
     return ok(risk_mod.school_risk(store.get(), _subject(subject), school_id, threshold))
 
 
+@app.get("/api/school/{school_id}/report")
+def school_report(school_id: str, subject: str | None = None, lang: str = "ru", user: dict = Depends(require(*ANY))):
+    """Printable school card for the teachers' council."""
+    if user["role"] == "director" and user["school_id"] != school_id:
+        raise HTTPException(403, "Директор видит только свою школу")
+    from .report import build_school_report
+    try:
+        return ok(build_school_report(store.get(), _subject(subject), school_id, lang))
+    except StopIteration:
+        raise HTTPException(404, "Школа не найдена")
+
+
+@app.get("/api/compare")
+def compare_two(a: str, b: str, subject: str | None = None, user: dict = Depends(require(*REGION))):
+    from .analytics.compare import compare_schools
+    try:
+        return ok(compare_schools(store.get(), _subject(subject), a, b))
+    except KeyError:
+        raise HTTPException(404, "Школа не найдена")
+
+
 @app.get("/api/lesson")
 def lesson_plan(topic_id: str, subject: str | None = None, lang: str = "ru", user: dict = Depends(require(*ANY))):
     return ok(lesson_mod.build(store.get(), _subject(subject), topic_id, lang))
