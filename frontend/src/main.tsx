@@ -1,26 +1,28 @@
 import { ShieldAlert } from "lucide-react";
-import React, { type ReactNode } from "react";
+import React, { lazy, Suspense, type ReactNode } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Layout, { allowed } from "./components/Layout";
 import { Loading } from "./components/ui";
 import "./index.css";
 import { AppProvider, useApp } from "./lib/app";
-import Assistant from "./pages/Assistant";
-import DataPage from "./pages/Data";
-import Equity from "./pages/Equity";
-import Graph from "./pages/Graph";
-import Hours from "./pages/Hours";
 import Login from "./pages/Login";
-import MySchool from "./pages/MySchool";
-import Overview from "./pages/Overview";
-import Pilot from "./pages/Pilot";
-import Quality from "./pages/Quality";
-import Report from "./pages/Report";
-import Schools from "./pages/Schools";
-import Textbooks from "./pages/Textbooks";
-import Topics from "./pages/Topics";
-import Validation from "./pages/Validation";
+
+const Assistant = lazy(() => import("./pages/Assistant"));
+const DataPage = lazy(() => import("./pages/Data"));
+const Equity = lazy(() => import("./pages/Equity"));
+const Graph = lazy(() => import("./pages/Graph"));
+const Hours = lazy(() => import("./pages/Hours"));
+const MySchool = lazy(() => import("./pages/MySchool"));
+const Compare = lazy(() => import("./pages/Compare"));
+const Overview = lazy(() => import("./pages/Overview"));
+const Pilot = lazy(() => import("./pages/Pilot"));
+const Quality = lazy(() => import("./pages/Quality"));
+const Report = lazy(() => import("./pages/Report"));
+const Schools = lazy(() => import("./pages/Schools"));
+const Textbooks = lazy(() => import("./pages/Textbooks"));
+const Topics = lazy(() => import("./pages/Topics"));
+const Validation = lazy(() => import("./pages/Validation"));
 
 function Guard({ children }: { children: ReactNode }) {
   const { user, t } = useApp();
@@ -44,6 +46,7 @@ function Shell() {
   return (
     <Layout>
       <Guard>
+        <Suspense fallback={<Loading />}>
         <Routes>
           <Route path="/" element={<Overview />} />
           <Route path="/school" element={<MySchool />} />
@@ -54,6 +57,8 @@ function Shell() {
           <Route path="/pilot" element={<Pilot />} />
           <Route path="/quality" element={<Quality />} />
           <Route path="/schools" element={<Schools />} />
+          <Route path="/compare" element={<Compare />} />
+          <Route path="/school-report" element={<Report />} />
           <Route path="/equity" element={<Equity />} />
           <Route path="/assistant" element={<Assistant />} />
           <Route path="/report" element={<Report />} />
@@ -61,6 +66,7 @@ function Shell() {
           <Route path="/validation" element={<Validation />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </Guard>
     </Layout>
   );
