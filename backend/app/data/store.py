@@ -32,6 +32,11 @@ SCHEMA: dict[str, dict] = {
     "responses": {"required": ["student_id", "class_id", "item_id"], "optional": ["answer", "correct"]},
 }
 
+# Optional tables: analysed when present, never required.
+OPTIONAL_SCHEMA: dict[str, dict] = {
+    "history": {"required": ["school_id", "subject_id", "year", "textbook_id", "mean_pct"], "optional": ["n_students"]},
+}
+
 TABLE_DESCRIPTIONS = {
     "subjects": "Предметы: subject_id, name, grade, total_hours",
     "topics": "Темы программы: topic_id, subject_id, section, name, planned_hours, prerequisites (через ;)",
@@ -42,6 +47,8 @@ TABLE_DESCRIPTIONS = {
     "hours": "Фактические часы по теме в классе: class_id, topic_id, hours",
     "items": "Задания теста: item_id, topic_id, correct_option",
     "responses": "Ответы: student_id, class_id, item_id, answer (A–D) или correct (0/1)",
+    "history": "Необязательно — итоги школ по годам: school_id, subject_id, year, textbook_id, mean_pct (0–100). "
+               "Нужна для анализа «до/после» смены учебника",
 }
 
 
@@ -142,7 +149,8 @@ def _read_table(path: Path) -> pd.DataFrame:
 
 def _coerce(tables: dict[str, pd.DataFrame]) -> None:
     num = {"topics": ["planned_hours", "order"], "subjects": ["grade", "total_hours"], "hours": ["hours"],
-           "students": ["baseline_score"], "items": ["n_options"], "responses": ["correct"]}
+           "students": ["baseline_score"], "items": ["n_options"], "responses": ["correct"],
+           "history": ["year", "mean_pct", "n_students"]}
     for t, cols in num.items():
         for c in cols:
             if t in tables and c in tables[t]:
@@ -239,6 +247,15 @@ def validate(tables: dict[str, pd.DataFrame]) -> dict:
         if r["item_id"].isin(tables["items"]["item_id"]).sum() == 0:
             errors.append("Ни один ответ не относится к заданиям из «items»")
 
+    if "history" in tables:
+        h = tables["history"]
+        miss = [c for c in OPTIONAL_SCHEMA["history"]["required"] if c not in h.columns]
+        if miss:
+            warnings.append(f"Таблица «history» пропущена: нет колонок {', '.join(miss)}")
+            del tables["history"]
+        elif h["year"].nunique() < 2:
+            warnings.append("В «history» только один год — анализ «до/после» смены учебника недоступен")
+
     stats = {name: int(len(df)) for name, df in tables.items()}
     return {"ok": not errors, "errors": errors, "warnings": warnings, "stats": stats}
 
@@ -253,7 +270,7 @@ def _fill_hours(tables):
 
 def load_dir(path: Path, source: str, version: int) -> Dataset:
     tables = {}
-    for name in SCHEMA:
+    for name in [*SCHEMA, *OPTIONAL_SCHEMA]:
         f = path / f"{name}.csv"
         if f.exists():
             tables[name] = _read_table(f)
@@ -280,14 +297,14 @@ def extract_upload(files: list[tuple[str, bytes]], dest: Path) -> None:
             with zipfile.ZipFile(io.BytesIO(content)) as z:
                 for info in z.infolist():
                     base = Path(info.filename).name
-                    if base.lower().endswith(".csv") and Path(base).stem in SCHEMA:
+                    if base.lower().endswith(".csv") and (Path(base).stem in SCHEMA or Path(base).stem in OPTIONAL_SCHEMA):
                         (dest / base).write_bytes(z.read(info))
         elif low.endswith((".xlsx", ".xls")):
             sheets = pd.read_excel(io.BytesIO(content), sheet_name=None, dtype=str)
             for name, df in sheets.items():
-                if name.strip().lower() in SCHEMA:
+                if name.strip().lower() in SCHEMA or name.strip().lower() in OPTIONAL_SCHEMA:
                     df.to_csv(dest / f"{name.strip().lower()}.csv", index=False)
-        elif low.endswith(".csv") and Path(fname).stem in SCHEMA:
+        elif low.endswith(".csv") and (Path(fname).stem in SCHEMA or Path(fname).stem in OPTIONAL_SCHEMA):
             (dest / Path(fname).name).write_bytes(content)
 
 
@@ -323,7 +340,7 @@ class Store:
         tmp = DATA_DIR / "_incoming"
         extract_upload(files, tmp)
         tables = {}
-        for name in SCHEMA:
+        for name in [*SCHEMA, *OPTIONAL_SCHEMA]:
             f = tmp / f"{name}.csv"
             if f.exists():
                 tables[name] = _read_table(f)
