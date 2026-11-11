@@ -53,7 +53,7 @@ export default function Validation() {
                 <ReferenceLine segment={[{ x: -lim, y: -lim }, { x: lim, y: lim }]} stroke="#94a3b8" strokeDasharray="4 3" />
                 <Tooltip formatter={(v: number) => fmt(v)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Scatter isAnimationActive={false} name={t("vl_ours")} data={tb.map((x) => ({ x: x.true, y: x.adjusted }))} fill="#0f766e" />
+                <Scatter isAnimationActive={false} name={t("vl_ours")} data={tb.map((x) => ({ x: x.true, y: x.adjusted }))} fill="#15803d" />
                 <Scatter isAnimationActive={false} name={t("vl_naive")} data={tb.map((x) => ({ x: x.true, y: x.naive }))} fill="#f59e0b" shape="diamond" />
               </ScatterChart>
             </ResponsiveContainer>
@@ -71,7 +71,7 @@ export default function Validation() {
                 <ZAxis range={[50, 50]} />
                 <ReferenceLine segment={[{ x: 0, y: 0 }, { x: hlim, y: hlim }]} stroke="#94a3b8" strokeDasharray="4 3" />
                 <Tooltip content={({ payload }) => payload?.[0] ? <div className="rounded border border-line bg-white px-2 py-1 text-[12px] shadow">{(payload[0].payload as any).n}</div> : null} />
-                <Scatter isAnimationActive={false} data={data.hours.map((x) => ({ x: x.true, y: x.estimated, n: x.name }))} fill="#0f766e" />
+                <Scatter isAnimationActive={false} data={data.hours.map((x) => ({ x: x.true, y: x.estimated, n: x.name }))} fill="#15803d" />
               </ScatterChart>
             </ResponsiveContainer>
           </div>
@@ -89,7 +89,7 @@ export default function Validation() {
                 <Tooltip formatter={(v: number) => fmt(v, 3)} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="oracle" name={t("vl_oracle")} fill="#cbd5e1" radius={[3, 3, 0, 0]} isAnimationActive={false} />
-                <Bar dataKey="ours" name={t("vl_ours")} fill="#0f766e" radius={[3, 3, 0, 0]} isAnimationActive={false} />
+                <Bar dataKey="ours" name={t("vl_ours")} fill="#15803d" radius={[3, 3, 0, 0]} isAnimationActive={false} />
                 <Bar dataKey="heuristic" name={t("vl_heuristic")} fill="#f59e0b" radius={[3, 3, 0, 0]} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>

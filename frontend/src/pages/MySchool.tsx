@@ -75,7 +75,7 @@ export default function MySchool() {
                 <Tooltip formatter={(v: number) => `${signed(v)} ${t("pp")}`} cursor={{ fill: "#f1f5f9" }} />
                 <ReferenceLine x={0} stroke="#94a3b8" />
                 <Bar dataKey="gap" radius={3} isAnimationActive={false}>
-                  {chart.map((c, i) => <Cell key={i} fill={c.gap >= 0 ? "#0f766e" : "#ea580c"} />)}
+                  {chart.map((c, i) => <Cell key={i} fill={c.gap >= 0 ? "#15803d" : "#ea580c"} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

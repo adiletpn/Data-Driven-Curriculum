@@ -142,8 +142,8 @@ export default function Overview() {
                 <XAxis dataKey="bin" tick={{ fontSize: 11, fill: "#64748b" }} tickLine={false} axisLine={false} />
                 <YAxis tick={{ fontSize: 11, fill: "#64748b" }} tickLine={false} axisLine={false} />
                 <Tooltip cursor={{ fill: "#f1f5f9" }} formatter={(v: number) => [v, t("students")]} />
-                <ReferenceLine x="60–70" stroke="#0f766e" strokeDasharray="3 3" />
-                <Bar dataKey="n" fill="#0f766e" radius={[4, 4, 0, 0]} />
+                <ReferenceLine x="60–70" stroke="#15803d" strokeDasharray="3 3" />
+                <Bar dataKey="n" fill="#15803d" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

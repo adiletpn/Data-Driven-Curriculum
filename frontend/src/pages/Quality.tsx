@@ -16,7 +16,7 @@ function OptionBars({ it }: { it: ItemRow }) {
           {(["share_low", "share_high"] as const).map((k) => (
             <div key={k} className="flex items-center gap-1.5">
               <div className="h-2.5 flex-1 rounded-full bg-slate-100">
-                <div className="h-full rounded-full" style={{ width: `${(o[k] ?? 0) * 100}%`, background: k === "share_low" ? "#f59e0b" : "#0f766e" }} />
+                <div className="h-full rounded-full" style={{ width: `${(o[k] ?? 0) * 100}%`, background: k === "share_low" ? "#f59e0b" : "#15803d" }} />
               </div>
               <span className="w-8 text-right tabular-nums text-muted">{fmt((o[k] ?? 0) * 100, 0)}</span>
             </div>
@@ -39,7 +39,7 @@ export default function Quality() {
   const crit = data.items.filter((x) => x.critical);
   const warn = data.items.filter((x) => !x.critical && x.flags.length);
   const alphas = data.topics.map((x) => x.alpha).filter((x) => x != null);
-  const pts = data.items.map((x) => ({ x: x.p_value * 100, y: x.discrimination, id: x.item_id, c: x.critical ? "#c2410c" : x.flags.length ? "#d97706" : "#0f766e" }));
+  const pts = data.items.map((x) => ({ x: x.p_value * 100, y: x.discrimination, id: x.item_id, c: x.critical ? "#c2410c" : x.flags.length ? "#d97706" : "#15803d" }));
 
   return (
     <div className="space-y-6">
@@ -57,7 +57,7 @@ export default function Quality() {
             <ResponsiveContainer>
               <ScatterChart margin={{ left: -6, right: 12, top: 8, bottom: 8 }}>
                 <CartesianGrid stroke="#eef2f6" />
-                <ReferenceArea x1={30} x2={90} y1={0.25} y2={0.7} fill="#0f766e" fillOpacity={0.06} />
+                <ReferenceArea x1={30} x2={90} y1={0.25} y2={0.7} fill="#15803d" fillOpacity={0.06} />
                 <XAxis type="number" dataKey="x" domain={[0, 100]} unit="%" tick={{ fontSize: 11, fill: "#64748b" }} name={t("q_difficulty")}
                   label={{ value: t("q_difficulty"), position: "insideBottom", offset: -4, fontSize: 11, fill: "#64748b" }} />
                 <YAxis type="number" dataKey="y" domain={[-0.4, 0.7]} ticks={[-0.4, -0.2, 0, 0.2, 0.4, 0.6]} tick={{ fontSize: 11, fill: "#64748b" }} name={t("q_discrimination")}

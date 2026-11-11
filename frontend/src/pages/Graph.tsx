@@ -59,7 +59,7 @@ export default function Graph() {
     const y1 = a.y + NH / 2, y2 = b.y + NH / 2, dx = (x2 - x1) / 2;
     return `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`;
   };
-  const edgeColor = (e: Edge) => roots.has(`${e.prereq_id}>${e.topic_id}`) ? "#c2410c" : e.strength === "strong" ? "#0f766e" : e.strength === "moderate" ? "#5eada4" : "#cbd5e1";
+  const edgeColor = (e: Edge) => roots.has(`${e.prereq_id}>${e.topic_id}`) ? "#c2410c" : e.strength === "strong" ? "#15803d" : e.strength === "moderate" ? "#86c79b" : "#cbd5e1";
   const nm = (id: string) => L(node.get(id), "name") || id;
 
   return (
@@ -67,8 +67,8 @@ export default function Graph() {
       <PageHeader title={t("gr_title")} sub={t("gr_sub")} />
       <Card pad={false}>
         <div className="flex flex-wrap items-center gap-4 border-b border-line px-5 py-3 text-[12px] text-muted">
-          <span className="flex items-center gap-1.5"><span className="h-0.5 w-6 bg-[#0f766e]" />{t("gr_legend_strong")}</span>
-          <span className="flex items-center gap-1.5"><span className="h-0.5 w-6 bg-[#5eada4]" />{t("gr_legend_moderate")}</span>
+          <span className="flex items-center gap-1.5"><span className="h-0.5 w-6 bg-[#15803d]" />{t("gr_legend_strong")}</span>
+          <span className="flex items-center gap-1.5"><span className="h-0.5 w-6 bg-[#86c79b]" />{t("gr_legend_moderate")}</span>
           <span className="flex items-center gap-1.5"><span className="h-0.5 w-6 border-t-2 border-dashed border-slate-300" />{t("gr_legend_none")}</span>
           <span className="flex items-center gap-1.5"><span className="h-0.5 w-6 bg-[#c2410c]" />{t("gr_root")}</span>
           <span className="ml-auto flex gap-3">
@@ -80,7 +80,7 @@ export default function Graph() {
         <div className="overflow-x-auto">
           <svg viewBox={`0 0 ${layout.w} ${layout.h}`} width="100%" style={{ minWidth: 880, maxWidth: layout.w }} className="mx-auto block">
             <defs>
-              {["#0f766e", "#5eada4", "#cbd5e1", "#c2410c"].map((c) => (
+              {["#15803d", "#86c79b", "#cbd5e1", "#c2410c"].map((c) => (
                 <marker key={c} id={`arr${c.slice(1)}`} viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
                   <path d="M0,0 L10,5 L0,10 z" fill={c} />
                 </marker>

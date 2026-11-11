@@ -43,7 +43,7 @@ export default function SwitchPanel() {
                     <YAxis domain={["dataMin - 3", "dataMax + 3"]} tick={{ fontSize: 11, fill: "#64748b" }} unit="%" />
                     <Tooltip formatter={(v: number) => `${fmt(v)}%`} />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Line dataKey="sw" name={t("sw_switched")} stroke="#0d9488" strokeWidth={3} dot={{ r: 4 }} isAnimationActive={false} />
+                    <Line dataKey="sw" name={t("sw_switched")} stroke="#16a34a" strokeWidth={3} dot={{ r: 4 }} isAnimationActive={false} />
                     <Line dataKey="st" name={t("sw_stayed")} stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 4" dot={{ r: 3 }} isAnimationActive={false} />
                   </LineChart>
                 </ResponsiveContainer>
