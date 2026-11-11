@@ -15,6 +15,7 @@ import Hours from "./pages/Hours";
 import Login from "./pages/Login";
 import MySchool from "./pages/MySchool";
 import Overview from "./pages/Overview";
+import Pilot from "./pages/Pilot";
 import Quality from "./pages/Quality";
 import Report from "./pages/Report";
 import Schools from "./pages/Schools";
@@ -51,6 +52,7 @@ function Shell() {
           <Route path="/graph" element={<Graph />} />
           <Route path="/textbooks" element={<Textbooks />} />
           <Route path="/hours" element={<Hours />} />
+          <Route path="/pilot" element={<Pilot />} />
           <Route path="/quality" element={<Quality />} />
           <Route path="/schools" element={<Schools />} />
           <Route path="/equity" element={<Equity />} />

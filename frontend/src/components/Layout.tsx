@@ -1,6 +1,6 @@
 import {
   BarChart3, BookOpen, Bot, Building2, ClipboardCheck, Clock, Database, FileText, FlaskConical, LayoutDashboard,
-  LogOut, Menu, Network, School, Scale, X,
+  LogOut, Menu, Moon, Network, School, Scale, Sun, Target, X,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -27,6 +27,7 @@ export const NAV: { group: Key; items: { to: string; key: Key; icon: ReactNode; 
     items: [
       { to: "/textbooks", key: "nav_textbooks", icon: <BookOpen className="h-4 w-4" />, roles: R },
       { to: "/hours", key: "nav_hours", icon: <Clock className="h-4 w-4" />, roles: R },
+      { to: "/pilot", key: "nav_pilot", icon: <Target className="h-4 w-4" />, roles: R },
       { to: "/schools", key: "nav_schools", icon: <School className="h-4 w-4" />, roles: R },
       { to: "/equity", key: "nav_equity", icon: <Scale className="h-4 w-4" />, roles: R },
     ],
@@ -110,7 +111,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export default function Layout({ children }: { children: ReactNode }) {
-  const { t, lang, setLang, subject, setSubject, meta, L, isRegion } = useApp();
+  const { t, lang, setLang, subject, setSubject, meta, L, isRegion, theme, toggleTheme } = useApp();
   const [open, setOpen] = useState(false);
   const loc = useLocation();
   const wide = loc.pathname === "/graph";
@@ -132,7 +133,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
       )}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="no-print sticky top-0 z-30 flex flex-wrap items-center gap-3 border-b border-line/70 bg-white/75 px-4 py-2.5 backdrop-blur-xl md:px-8">
+        <header className="no-print sticky top-0 z-30 flex flex-wrap items-center gap-3 header-bar border-b border-line/70 px-4 py-2.5 backdrop-blur-xl md:px-8">
           <button className="p-1 text-muted lg:hidden" onClick={() => setOpen(true)} aria-label="menu">
             <Menu className="h-5 w-5" />
           </button>
@@ -150,6 +151,10 @@ export default function Layout({ children }: { children: ReactNode }) {
               </span>
             )}
             <Segmented size="sm" value={lang} onChange={setLang} options={[{ value: "ru", label: "РУС" }, { value: "kz", label: "ҚАЗ" }]} />
+            <button onClick={toggleTheme} title={theme === "dark" ? t("theme_light") : t("theme_dark")}
+              className="grid h-8 w-8 place-items-center rounded-lg border border-line text-muted transition hover:text-ink">
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
           </div>
         </header>
         <main key={loc.pathname} className={cx("page-enter print-area mx-auto w-full flex-1 px-4 py-6 md:px-8 md:py-8", wide ? "max-w-[1600px]" : "max-w-[1320px]")}>
