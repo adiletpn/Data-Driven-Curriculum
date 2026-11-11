@@ -1,5 +1,6 @@
 import { AlertTriangle, Trophy } from "lucide-react";
 import { useState } from "react";
+import SwitchPanel from "../components/SwitchPanel";
 import { Card, cx, EffectBar, ErrorBox, Loading, Note, PageHeader, PctBar, Segmented, Tag } from "../components/ui";
 import { useApi } from "../lib/api";
 import { useApp } from "../lib/app";
@@ -123,6 +124,8 @@ export default function Textbooks() {
           </div>
         </Card>
       </div>
+
+      <SwitchPanel />
 
       <Card title={t("tb_heatmap")} sub={t("tb_heatmap_sub")} pad={false}>
         <div className="overflow-x-auto">
