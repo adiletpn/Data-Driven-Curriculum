@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
@@ -39,6 +40,7 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="Data-Driven Curriculum API", version="1.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 
@@ -428,12 +430,30 @@ def ai_status(user: dict = Depends(require(*ANY))):
 
 # ---------------------------------------------------------------- warm-up & static
 def _warmup():
+    """Precompute everything the UI opens by default, then persist it to disk."""
+    from .data.diskcache import save
+    from .report import build_report
     try:
         ds = store.get()
         for sj in ds.subjects["subject_id"]:
+            topics_mod.subject_overview(ds, sj)
+            topics_mod.section_table(ds, sj)
             insights_mod.build(ds, sj)
+            prereq_mod.analyze(ds, sj)
+            items_mod.audit(ds, sj)
+            textbooks_mod.compare(ds, sj)
+            for mode in ("balanced", "foundation", "equity"):
+                hours_mod.optimize(ds, sj, mode=mode)
+            schools_mod.value_added(ds, sj)
             schools_mod.equity(ds, sj)
+            schools_mod.district_map(ds, sj)
+            switching_mod.analyze(ds, sj)
+            pilot_mod.plan(ds, sj)
+            risk_mod.models(ds, sj)
+            for lang in ("ru", "kz"):
+                build_report(ds, sj, lang)
         validation_mod.run(ds)
+        save(ds)
     except Exception as e:  # pragma: no cover - warm-up is best effort
         print("warm-up failed:", e)
 
@@ -448,5 +468,7 @@ if FRONTEND_DIST.exists():
         root = FRONTEND_DIST.resolve()
         f = (FRONTEND_DIST / path).resolve()
         if path and f.is_file() and root in f.parents:
-            return FileResponse(f)
+            # Vite emits content-hashed files under /assets — safe to cache forever
+            headers = {"Cache-Control": "public, max-age=31536000, immutable"} if path.startswith("assets/") else None
+            return FileResponse(f, headers=headers)
         return FileResponse(FRONTEND_DIST / "index.html")
