@@ -1,6 +1,6 @@
 import {
   BarChart3, BookOpen, Bot, Building2, ClipboardCheck, Clock, Database, FileText, FlaskConical, LayoutDashboard,
-  LogOut, Menu, Moon, Network, School, Scale, Sun, Target, X,
+  LogOut, Menu, Network, School, Scale, Target, X,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { NavLink, useLocation } from "react-router-dom";
@@ -51,14 +51,15 @@ export function allowed(path: string, role: Role | undefined) {
 }
 
 function Logo() {
+  const { t } = useApp();
   return (
     <div className="flex items-center gap-3">
       <div className="logo-mark grid h-10 w-10 place-items-center rounded-xl text-white">
         <svg viewBox="0 0 32 32" className="h-5 w-5"><path d="M8 24V14M14 24V8M20 24v-8M26 24V12" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" /></svg>
       </div>
-      <div className="leading-tight">
-        <div className="text-[15px] font-semibold text-ink">Data-Driven</div>
-        <div className="text-[12.5px] font-medium text-muted">Curriculum</div>
+      <div className="min-w-0 leading-tight">
+        <div className="font-display text-[18px] font-bold tracking-tight text-ink">Data-Driven <span className="font-medium text-accent">Curriculum</span></div>
+        <div className="truncate text-[11.5px] text-muted">{t("brand_sub")}</div>
       </div>
     </div>
   );
@@ -76,7 +77,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           if (!items.length) return null;
           return (
             <div key={g.group}>
-              <div className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-400">{t(g.group)}</div>
+              <div className="mb-1.5 px-3 text-[11.5px] font-semibold uppercase tracking-[0.04em] text-faint">{t(g.group)}</div>
               <div className="flex flex-col gap-0.5">
                 {items.map((i) => (
                   <NavLink key={i.to} to={i.to} end={i.to === "/"} onClick={onNavigate}
@@ -91,9 +92,9 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         })}
       </div>
       {user && (
-        <div className="sidebar-user rounded-2xl p-3">
+        <div className="sidebar-user rounded-2xl p-2">
           <div className="flex items-center gap-3">
-            <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-green-400 to-emerald-700 text-[13px] font-semibold text-white">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-[13px] font-semibold text-white">
               {L(user, "name").slice(0, 1)}
             </div>
             <div className="min-w-0 flex-1">
@@ -111,20 +112,21 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export default function Layout({ children }: { children: ReactNode }) {
-  const { t, lang, setLang, subject, setSubject, meta, L, isRegion, theme, toggleTheme } = useApp();
+  const { t, lang, setLang, subject, setSubject, meta, L, isRegion } = useApp();
   const [open, setOpen] = useState(false);
   const loc = useLocation();
   const wide = loc.pathname === "/graph";
 
   return (
-    <div className="flex min-h-full">
-      <aside className="no-print sticky top-0 hidden h-screen w-[272px] shrink-0 lg:block">
+    <div className="relative flex min-h-full">
+      <div className="aurora no-print" aria-hidden><span /><span /><span /></div>
+      <aside className="no-print sticky top-0 z-10 hidden h-screen w-[284px] shrink-0 lg:block">
         <Sidebar />
       </aside>
       {open && (
         <div className="no-print fixed inset-0 z-40 lg:hidden">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 w-72 shadow-2xl">
+          <aside className="absolute inset-y-0 left-0 w-[290px]">
             <button className="absolute right-3 top-4 z-10 p-1 text-slate-400" onClick={() => setOpen(false)} aria-label={t("close")}>
               <X className="h-5 w-5" />
             </button>
@@ -132,7 +134,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </aside>
         </div>
       )}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="relative z-[1] flex min-w-0 flex-1 flex-col">
         <header className="no-print sticky top-0 z-30 flex flex-wrap items-center gap-3 header-bar border-b border-line/70 px-4 py-2.5 backdrop-blur-xl md:px-8">
           <button className="p-1 text-muted lg:hidden" onClick={() => setOpen(true)} aria-label="menu">
             <Menu className="h-5 w-5" />
@@ -151,10 +153,6 @@ export default function Layout({ children }: { children: ReactNode }) {
               </span>
             )}
             <Segmented size="sm" value={lang} onChange={setLang} options={[{ value: "ru", label: "РУС" }, { value: "kz", label: "ҚАЗ" }]} />
-            <button onClick={toggleTheme} title={theme === "dark" ? t("theme_light") : t("theme_dark")}
-              className="grid h-8 w-8 place-items-center rounded-lg border border-line text-muted transition hover:text-ink">
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
           </div>
         </header>
         <main key={loc.pathname} className={cx("page-enter print-area mx-auto w-full flex-1 px-4 py-6 md:px-8 md:py-8", wide ? "max-w-[1600px]" : "max-w-[1320px]")}>

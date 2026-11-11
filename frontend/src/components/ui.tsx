@@ -65,7 +65,7 @@ const STATUS_CLS: Record<Status, string> = {
   strong: "bg-good-soft text-good ring-good/20",
 };
 export const STATUS_COLOR: Record<Status, string> = {
-  critical: "#c2410c", risk: "#d97706", ok: "#64748b", strong: "#15803d",
+  critical: "#cc3340", risk: "#d97706", ok: "#64748b", strong: "#16834f",
 };
 
 export function StatusBadge({ s }: { s: Status }) {
@@ -106,15 +106,15 @@ export function Segmented<T extends string>({ value, onChange, options, size = "
   value: T; onChange: (v: T) => void; options: { value: T; label: ReactNode }[]; size?: "sm" | "md";
 }) {
   return (
-    <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
+    <div className="inline-flex gap-0.5 rounded-[14px] border border-black/[0.08] bg-white/70 p-1 backdrop-blur-xl">
       {options.map((o) => (
         <button
           key={o.value}
           onClick={() => onChange(o.value)}
           className={cx(
-            "rounded-md font-medium transition",
-            size === "sm" ? "px-2.5 py-1 text-[12px]" : "px-3 py-1.5 text-[13px]",
-            value === o.value ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink",
+            "rounded-[10px] font-medium transition",
+            size === "sm" ? "px-2.5 py-1 text-[12px]" : "px-3.5 py-1.5 text-[13.5px]",
+            value === o.value ? "bg-white text-ink shadow-[0_1px_2px_rgba(0,0,0,.06),0_4px_12px_rgba(0,0,0,.05)]" : "text-muted hover:text-ink",
           )}
         >
           {o.label}
@@ -144,7 +144,7 @@ export function Select({ value, onChange, options, label }: {
 }
 
 /** Horizontal bar with a confidence interval whisker (0..100 scale). */
-export function PctBar({ value, ci, color = "#15803d", max = 100 }: { value: number; ci?: [number, number]; color?: string; max?: number }) {
+export function PctBar({ value, ci, color = "#4f52d1", max = 100 }: { value: number; ci?: [number, number]; color?: string; max?: number }) {
   return (
     <div className="relative h-2.5 w-full rounded-full bg-slate-100">
       <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${(value / max) * 100}%`, background: color }} />
@@ -164,7 +164,7 @@ export function EffectBar({ est, ci, range = 15, positiveGood = true }: { est: n
   const pos = (x: number) => `${Math.max(0, Math.min(100, 50 + (x / range) * 50))}%`;
   const sig = ci[0] !== null && ci[1] !== null && (ci[0]! > 0 || ci[1]! < 0);
   const good = positiveGood ? est > 0 : est < 0;
-  const col = !sig ? "#94a3b8" : good ? "#15803d" : "#c2410c";
+  const col = !sig ? "#94a3b8" : good ? "#16834f" : "#cc3340";
   return (
     <div className="relative h-5 w-full">
       <div className="absolute inset-y-0 left-1/2 w-px bg-slate-300" />
