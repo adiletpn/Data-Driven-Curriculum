@@ -1,6 +1,8 @@
 import { Award, BookOpen, MapPin, Target, TrendingDown, TrendingUp, Users } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import LessonButton from "../components/LessonButton";
+import RiskPanel from "../components/RiskPanel";
 import { Card, cx, Empty, ErrorBox, Kpi, Loading, StatusBadge, Tag } from "../components/ui";
 import { useApi } from "../lib/api";
 import { useApp } from "../lib/app";
@@ -89,7 +91,10 @@ export default function MySchool() {
                     <div className="text-[13.5px] font-medium">{L(x, "name")}</div>
                     <div className="text-[12px] text-muted">{t("ms_school")} {fmt(x.school)}% · {t("ms_region")} {fmt(x.region)}%</div>
                   </div>
-                  <span className="flex items-center gap-1 text-[13px] font-semibold text-bad"><TrendingDown className="h-4 w-4" />{signed(x.gap)}</span>
+                  <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-1 text-[13px] font-semibold text-bad"><TrendingDown className="h-4 w-4" />{signed(x.gap)}</span>
+                    <LessonButton topicId={x.topic_id} small />
+                  </span>
                 </Link>
               ))}
               {!weak.length && <div className="text-[13px] text-muted">—</div>}
@@ -121,6 +126,8 @@ export default function MySchool() {
           </Card>
         </div>
       </div>
+
+      <RiskPanel schoolId={s.school_id} />
 
       <Card title={t("nav_topics")} pad={false}>
         <table className="tbl">
