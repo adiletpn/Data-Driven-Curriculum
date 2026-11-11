@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
-import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, LabelList, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { axis, axisNoLine, C, cursorLine, grid, Legend, RingDot, tip } from "./charts";
 import { useApi } from "../lib/api";
 import { useApp } from "../lib/app";
 import { fmt, signed } from "../lib/i18n";
@@ -35,16 +36,22 @@ export default function SwitchPanel() {
               <div className="mt-1 text-[12px] text-muted">
                 {t("sw_switched")}: {s.n_switched} {t("schools")} · {t("sw_stayed")}: {s.n_control}
               </div>
-              <div className="mt-3 h-40">
+              <div className="mt-3"><Legend items={[{ label: t("sw_switched"), color: C.s1, kind: "line" }, { label: t("sw_stayed"), color: C.neutral, kind: "line" }]} /></div>
+              <div className="h-44">
                 <ResponsiveContainer>
-                  <LineChart data={chart} margin={{ left: -18, right: 12, top: 6 }}>
-                    <CartesianGrid stroke="#eef2f6" />
-                    <XAxis dataKey="year" tick={{ fontSize: 11, fill: "#64748b" }} />
-                    <YAxis domain={["dataMin - 3", "dataMax + 3"]} tick={{ fontSize: 11, fill: "#64748b" }} unit="%" />
-                    <Tooltip formatter={(v: number) => `${fmt(v)}%`} />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Line dataKey="sw" name={t("sw_switched")} stroke="#4f52d1" strokeWidth={3} dot={{ r: 4 }} isAnimationActive={false} />
-                    <Line dataKey="st" name={t("sw_stayed")} stroke="#94a3b8" strokeWidth={2} strokeDasharray="5 4" dot={{ r: 3 }} isAnimationActive={false} />
+                  <LineChart data={chart} margin={{ left: -16, right: 46, top: 10, bottom: 0 }}>
+                    <CartesianGrid vertical={false} {...grid} />
+                    <XAxis dataKey="year" {...axis} padding={{ left: 18, right: 4 }} />
+                    <YAxis domain={["dataMin - 3", "dataMax + 3"]} {...axisNoLine} tickFormatter={(v: number) => `${Math.round(v)}%`} />
+                    <Tooltip cursor={cursorLine} content={tip((p, label) => ({ title: label, rows: [
+                      { name: t("sw_switched"), value: `${fmt(p[0].payload.sw)}%`, color: C.s1 },
+                      { name: t("sw_stayed"), value: `${fmt(p[0].payload.st)}%`, color: C.neutral }] }))} />
+                    <Line dataKey="st" stroke={C.neutral} strokeWidth={2} strokeLinecap="round" dot={<RingDot fill={C.neutral} r={4} />} isAnimationActive={false}>
+                      <LabelList dataKey="st" content={(lp: any) => lp.index === 1 ? <text x={lp.x + 8} y={lp.y + 4} fontSize={11.5} fill={C.ink2}>{fmt(lp.value)}%</text> : null} />
+                    </Line>
+                    <Line dataKey="sw" stroke={C.s1} strokeWidth={2} strokeLinecap="round" dot={<RingDot fill={C.s1} r={4.5} />} isAnimationActive={false}>
+                      <LabelList dataKey="sw" content={(lp: any) => lp.index === 1 ? <text x={lp.x + 8} y={lp.y + 4} fontSize={11.5} fontWeight={600} fill={C.ink}>{fmt(lp.value)}%</text> : null} />
+                    </Line>
                   </LineChart>
                 </ResponsiveContainer>
               </div>

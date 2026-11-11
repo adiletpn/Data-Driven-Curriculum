@@ -2,6 +2,7 @@ import { usePersistentState } from "../lib/persist";
 import { CheckCircle2, FlaskConical, School, Target, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Area, AreaChart, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { axis, axisNoLine, C, ChartFrame, cursorLine, grid, RingDot, tip } from "../components/charts";
 import { Card, cx, ErrorBox, Kpi, Loading, Note, PageHeader, Segmented, Select, Tag } from "../components/ui";
 import { useApi } from "../lib/api";
 import { useApp } from "../lib/app";
@@ -65,19 +66,22 @@ export default function Pilot() {
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1.3fr]">
         <Card title={t("pl_curve")} sub={`${t("pl_probability")}, %`}>
-          <div className="h-64">
+          <ChartFrame height={260} table={{ columns: [t("schools"), t("pl_probability")], rows: curve.map((c) => [c.schools, `${fmt(c.power, 0)}%`]) }}>
             <ResponsiveContainer>
-              <AreaChart data={curve} margin={{ left: -12, right: 12, top: 8 }}>
-                <CartesianGrid stroke="#eef2f6" />
-                <XAxis dataKey="schools" tick={{ fontSize: 11, fill: "#64748b" }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#64748b" }} unit="%" />
-                <Tooltip formatter={(v: number) => `${fmt(v, 0)}%`} labelFormatter={(n) => `${n} ${t("schools")}`} />
-                <ReferenceLine y={Number(power) * 100} stroke="#4f52d1" strokeDasharray="4 3" />
-                <ReferenceLine x={data.schools_available} stroke="#cc3340" strokeDasharray="4 3" label={{ value: t("pl_available"), fontSize: 10, fill: "#cc3340", position: "top" }} />
-                <Area dataKey="power" stroke="#4f52d1" fill="#4f52d1" fillOpacity={0.15} strokeWidth={2.5} isAnimationActive={false} />
+              <AreaChart data={curve} margin={{ left: -12, right: 16, top: 22, bottom: 2 }}>
+                <CartesianGrid vertical={false} {...grid} />
+                <XAxis dataKey="schools" type="number" domain={[0, "dataMax"]} {...axis} />
+                <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} {...axisNoLine} tickFormatter={(v: number) => `${v}%`} />
+                <Tooltip cursor={cursorLine} content={tip((p) => ({ title: `${p[0].payload.schools} ${t("schools")}`,
+                  rows: [{ name: t("pl_probability"), value: `${fmt(p[0].payload.power, 0)}%`, color: C.s1 }] }))} />
+                <ReferenceLine y={Number(power) * 100} stroke={C.axis} label={{ value: `${Math.round(Number(power) * 100)}%`, position: "insideTopLeft", fontSize: 11, fill: C.muted }} />
+                <ReferenceLine x={data.schools_available} stroke={C.ink2} strokeWidth={1}
+                  label={{ value: `${t("pl_available")}: ${data.schools_available}`, position: "top", fontSize: 11, fill: C.ink2 }} />
+                <Area dataKey="power" stroke={C.s1} strokeWidth={2} fill={C.s1} fillOpacity={0.1} isAnimationActive={false}
+                  activeDot={<RingDot fill={C.s1} r={5} />} />
               </AreaChart>
             </ResponsiveContainer>
-          </div>
+          </ChartFrame>
         </Card>
 
         <Card title={t("pl_pairs")} sub={`${data.pairs.length}`} pad={false}>

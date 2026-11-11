@@ -1,5 +1,6 @@
 import { CheckCircle2, XCircle } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, Cell, Legend, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, LabelList, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
+import { axis, axisNoLine, C, ChartFrame, cursorBand, DataEndBar, grid, Legend, niceTicks, RingDot, tip } from "../components/charts";
 import { Card, Empty, ErrorBox, Kpi, Loading, PageHeader, Tag } from "../components/ui";
 import { useApi } from "../lib/api";
 import { useApp } from "../lib/app";
@@ -26,6 +27,7 @@ export default function Validation() {
   const lim = Math.ceil(Math.max(...tb.flatMap((x) => [Math.abs(x.true), Math.abs(x.adjusted), Math.abs(x.naive)])) / 5) * 5;
   const hlim = Math.ceil(Math.max(...data.hours.flatMap((x) => [x.true, x.estimated])) * 2) / 2;
   const subjName = (id: string) => meta?.subjects.find((x) => x.subject_id === id)?.[lang === "kz" ? "name_kz" : "name"] ?? id;
+  const policyTicks = niceTicks(0, Math.max(...data.policy.flatMap((p) => [p.oracle, p.ours, p.heuristic])), 4);
   const policy = data.policy.map((p) => ({ name: subjName(p.subject_id), oracle: p.oracle, ours: p.ours, heuristic: p.heuristic }));
   const ticks = (m: number) => [-m, -m / 2, 0, m / 2, m];
 
@@ -43,57 +45,78 @@ export default function Validation() {
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title={t("vl_tb")} sub={`${t("vl_true")} (X) vs ${t("vl_ours")} / ${t("vl_naive")} (Y), ${t("pp")}`}>
-          <div className="h-80">
+          <Legend items={[{ label: t("vl_ours"), color: C.s1, kind: "dot" }, { label: t("vl_naive"), color: C.s2, kind: "dot" },
+            { label: t("vl_ideal"), color: C.axis, kind: "line" }]} />
+          <ChartFrame height={300} table={{ columns: [t("section"), t("vl_true"), t("vl_ours"), t("vl_naive")],
+            rows: tb.map((x) => [`${x.section} · ${tbTitle(x.textbook_id)}`, signed(x.true), signed(x.adjusted), signed(x.naive)]) }}>
             <ResponsiveContainer>
-              <ScatterChart margin={{ left: -8, right: 12, top: 8, bottom: 8 }}>
-                <CartesianGrid stroke="#eef2f6" />
-                <XAxis type="number" dataKey="x" domain={[-lim, lim]} ticks={ticks(lim)} tick={{ fontSize: 11, fill: "#64748b" }} name={t("vl_true")} />
-                <YAxis type="number" dataKey="y" domain={[-lim, lim]} ticks={ticks(lim)} tick={{ fontSize: 11, fill: "#64748b" }} />
-                <ZAxis range={[50, 50]} />
-                <ReferenceLine segment={[{ x: -lim, y: -lim }, { x: lim, y: lim }]} stroke="#94a3b8" strokeDasharray="4 3" />
-                <Tooltip formatter={(v: number) => fmt(v)} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Scatter isAnimationActive={false} name={t("vl_ours")} data={tb.map((x) => ({ x: x.true, y: x.adjusted }))} fill="#4f52d1" />
-                <Scatter isAnimationActive={false} name={t("vl_naive")} data={tb.map((x) => ({ x: x.true, y: x.naive }))} fill="#f59e0b" shape="diamond" />
+              <ScatterChart margin={{ left: -6, right: 14, top: 8, bottom: 14 }}>
+                <CartesianGrid {...grid} />
+                <XAxis type="number" dataKey="x" domain={[-lim, lim]} ticks={ticks(lim)} {...axis}
+                  label={{ value: t("vl_true"), position: "insideBottom", offset: -8, fontSize: 11.5, fill: C.muted }} />
+                <YAxis type="number" dataKey="y" domain={[-lim, lim]} ticks={ticks(lim)} {...axisNoLine} />
+                <ZAxis range={[60, 60]} />
+                <ReferenceLine segment={[{ x: -lim, y: -lim }, { x: lim, y: lim }]} stroke={C.axis} strokeWidth={1} />
+                <Tooltip cursor={false} content={tip((p) => {
+                  const d = p[0].payload;
+                  return { title: d.label, rows: [{ name: t("vl_true"), value: `${signed(d.x)} ${t("pp")}` },
+                    { name: d.kind, value: `${signed(d.y)} ${t("pp")}`, color: d.color }, { name: "|Δ|", value: fmt(Math.abs(d.y - d.x)), muted: true }] };
+                })} />
+                <Scatter isAnimationActive={false} data={tb.map((x) => ({ x: x.true, y: x.naive, label: `${x.section} · ${tbTitle(x.textbook_id)}`, kind: t("vl_naive"), color: C.s2 }))}
+                  fill={C.s2} shape={<RingDot r={4.5} />} />
+                <Scatter isAnimationActive={false} data={tb.map((x) => ({ x: x.true, y: x.adjusted, label: `${x.section} · ${tbTitle(x.textbook_id)}`, kind: t("vl_ours"), color: C.s1 }))}
+                  fill={C.s1} shape={<RingDot r={4.5} />} />
               </ScatterChart>
             </ResponsiveContainer>
-          </div>
+          </ChartFrame>
           <div className="mt-2 text-[12px] text-muted">{t("ci95")} coverage: {fmt(s.textbook_ci_coverage * 100, 0)}%</div>
         </Card>
 
         <Card title={t("vl_hours")} sub={`${t("vl_true")} (X) vs ${t("vl_ours")} (Y), ${t("pp")}/${t("hours_short")}`}>
-          <div className="h-80">
+          <ChartFrame height={300} table={{ columns: [t("topic"), t("vl_true"), t("vl_ours")],
+            rows: data.hours.map((x) => [x.name, fmt(x.true, 2), fmt(x.estimated, 2)]) }}>
             <ResponsiveContainer>
-              <ScatterChart margin={{ left: -8, right: 12, top: 8, bottom: 8 }}>
-                <CartesianGrid stroke="#eef2f6" />
-                <XAxis type="number" dataKey="x" domain={[0, hlim]} ticks={[0, hlim / 4, hlim / 2, (3 * hlim) / 4, hlim]} tick={{ fontSize: 11, fill: "#64748b" }} />
-                <YAxis type="number" dataKey="y" domain={[0, hlim]} ticks={[0, hlim / 4, hlim / 2, (3 * hlim) / 4, hlim]} tick={{ fontSize: 11, fill: "#64748b" }} />
-                <ZAxis range={[50, 50]} />
-                <ReferenceLine segment={[{ x: 0, y: 0 }, { x: hlim, y: hlim }]} stroke="#94a3b8" strokeDasharray="4 3" />
-                <Tooltip content={({ payload }) => payload?.[0] ? <div className="rounded border border-line bg-white px-2 py-1 text-[12px] shadow">{(payload[0].payload as any).n}</div> : null} />
-                <Scatter isAnimationActive={false} data={data.hours.map((x) => ({ x: x.true, y: x.estimated, n: x.name }))} fill="#4f52d1" />
+              <ScatterChart margin={{ left: -6, right: 14, top: 8, bottom: 14 }}>
+                <CartesianGrid {...grid} />
+                <XAxis type="number" dataKey="x" domain={[0, niceTicks(0, hlim).slice(-1)[0]]} ticks={niceTicks(0, hlim)} {...axis}
+                  tickFormatter={(v: number) => fmt(v, 1)} label={{ value: t("vl_true"), position: "insideBottom", offset: -8, fontSize: 11.5, fill: C.muted }} />
+                <YAxis type="number" dataKey="y" domain={[0, niceTicks(0, hlim).slice(-1)[0]]} ticks={niceTicks(0, hlim)} {...axisNoLine} tickFormatter={(v: number) => fmt(v, 1)} />
+                <ZAxis range={[60, 60]} />
+                <ReferenceLine segment={[{ x: 0, y: 0 }, { x: hlim, y: hlim }]} stroke={C.axis} strokeWidth={1} />
+                <Tooltip cursor={false} content={tip((p) => {
+                  const d = p[0].payload;
+                  return { title: d.n, rows: [{ name: t("vl_true"), value: `${fmt(d.x, 2)} ${t("pp")}/${t("hours_short")}` },
+                    { name: t("vl_ours"), value: `${fmt(d.y, 2)} ${t("pp")}/${t("hours_short")}`, color: C.s1 }] };
+                })} />
+                <Scatter isAnimationActive={false} data={data.hours.map((x) => ({ x: x.true, y: x.estimated, n: x.name }))} fill={C.s1} shape={<RingDot r={4.5} />} />
               </ScatterChart>
             </ResponsiveContainer>
-          </div>
+          </ChartFrame>
         </Card>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title={t("vl_policy")} sub={t("vl_policy_sub")}>
-          <div className="h-64">
+          <Legend items={[{ label: t("vl_oracle"), color: C.neutral }, { label: t("vl_ours"), color: C.s1 }, { label: t("vl_heuristic"), color: C.s2 }]} />
+          <ChartFrame height={240} table={{ columns: [t("subject"), t("vl_oracle"), t("vl_ours"), t("vl_heuristic")],
+            rows: policy.map((p) => [p.name, fmt(p.oracle, 3), fmt(p.ours, 3), fmt(p.heuristic, 3)]) }}>
             <ResponsiveContainer>
-              <BarChart data={policy} margin={{ left: -10, right: 8, top: 8 }}>
-                <CartesianGrid vertical={false} stroke="#eef2f6" />
-                <XAxis dataKey="name" tick={{ fontSize: 12, fill: "#334155" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
-                <Tooltip formatter={(v: number) => fmt(v, 3)} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="oracle" name={t("vl_oracle")} fill="#cbd5e1" radius={[3, 3, 0, 0]} isAnimationActive={false} />
-                <Bar dataKey="ours" name={t("vl_ours")} fill="#4f52d1" radius={[3, 3, 0, 0]} isAnimationActive={false} />
-                <Bar dataKey="heuristic" name={t("vl_heuristic")} fill="#f59e0b" radius={[3, 3, 0, 0]} isAnimationActive={false} />
+              <BarChart data={policy} margin={{ left: -10, right: 8, top: 20 }} barGap={2} barCategoryGap="28%">
+                <CartesianGrid vertical={false} {...grid} />
+                <XAxis dataKey="name" {...axis} tick={{ fontSize: 12.5, fill: C.ink2 }} />
+                <YAxis {...axisNoLine} ticks={policyTicks} domain={[0, policyTicks.slice(-1)[0]]} tickFormatter={(v: number) => fmt(v, 2).replace(/,?0+$/, "") || "0"} />
+                <Tooltip cursor={cursorBand} content={tip((p, label) => ({ title: label, rows: [
+                  { name: t("vl_oracle"), value: `${fmt(p[0].payload.oracle, 2)} ${t("pp")}`, color: C.neutral },
+                  { name: t("vl_ours"), value: `${fmt(p[0].payload.ours, 2)} ${t("pp")}`, color: C.s1 },
+                  { name: t("vl_heuristic"), value: `${fmt(p[0].payload.heuristic, 2)} ${t("pp")}`, color: C.s2 }] }))} />
+                <Bar dataKey="oracle" fill={C.neutral} maxBarSize={24} shape={<DataEndBar />} isAnimationActive={false} />
+                <Bar dataKey="ours" fill={C.s1} maxBarSize={24} shape={<DataEndBar />} isAnimationActive={false}>
+                  <LabelList dataKey="ours" position="top" formatter={(v: number) => fmt(v, 2)} style={{ fontSize: 11.5, fontWeight: 600, fill: C.ink }} />
+                </Bar>
+                <Bar dataKey="heuristic" fill={C.s2} maxBarSize={24} shape={<DataEndBar />} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </ChartFrame>
         </Card>
 
         <Card title={t("vl_items")}>
