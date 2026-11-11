@@ -58,7 +58,7 @@ export default function Login() {
           </div>
         </div>
         <div className="relative z-10 mt-10 flex gap-8 text-[13px] text-white/60">
-          <div><div className="text-2xl font-semibold text-white">2,2 {t("pp")}</div>{t("lg_stat1")}</div>
+          <div><div className="text-2xl font-semibold text-white">1,2 {t("pp")}</div>{t("lg_stat1")}</div>
           <div><div className="text-2xl font-semibold text-white">100%</div>{t("lg_stat2")}</div>
           <div><div className="text-2xl font-semibold text-white">RU · KZ</div>{t("lg_stat3")}</div>
         </div>
