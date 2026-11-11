@@ -1,5 +1,6 @@
 import { FileSpreadsheet, Printer } from "lucide-react";
 import { ErrorBox, Loading, SeverityIcon } from "../components/ui";
+import { useSearchParams } from "react-router-dom";
 import { apiUrl, useApi } from "../lib/api";
 import { useApp } from "../lib/app";
 import type { Severity } from "../lib/types";
@@ -14,15 +15,18 @@ interface Section {
 interface ReportData { title: string; subject: string; grade: number; meta: string; source: string; sections: Section[] }
 
 export default function Report() {
-  const { t, subject, lang } = useApp();
-  const { data, error, loading } = useApi<ReportData>(subject ? `/api/report?subject=${subject}&lang=${lang}` : null);
+  const { t, subject, lang, user } = useApp();
+  const [params] = useSearchParams();
+  const school = user?.role === "director" ? user.school_id : params.get("school");
+  const url = school ? `/api/school/${school}/report?subject=${subject}&lang=${lang}` : `/api/report?subject=${subject}&lang=${lang}`;
+  const { data, error, loading } = useApi<ReportData>(subject ? url : null);
   if (error) return <ErrorBox msg={error} />;
   if (loading || !data) return <Loading />;
 
   return (
     <div className="mx-auto max-w-4xl">
       <div className="no-print mb-4 flex justify-end gap-2">
-        <a className="btn" href={apiUrl(`/api/export.xlsx?subject=${subject}`)}><FileSpreadsheet className="h-4 w-4" />{t("rp_excel")}</a>
+        {!school && <a className="btn" href={apiUrl(`/api/export.xlsx?subject=${subject}`)}><FileSpreadsheet className="h-4 w-4" />{t("rp_excel")}</a>}
         <button className="btn btn-primary" onClick={() => window.print()}><Printer className="h-4 w-4" />{t("rp_print")}</button>
       </div>
       <article className="card space-y-8 p-8 md:p-12">

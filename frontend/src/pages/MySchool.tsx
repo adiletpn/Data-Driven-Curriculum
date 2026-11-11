@@ -1,4 +1,5 @@
 import { Award, BookOpen, MapPin, Target, TrendingDown, TrendingUp, Users } from "lucide-react";
+import { FileText, GitCompareArrows } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import LessonButton from "../components/LessonButton";
@@ -35,7 +36,7 @@ export default function MySchool() {
 
   return (
     <div className="space-y-6">
-      <div className="hero rounded-3xl p-6 text-white md:p-8">
+      <div data-tour="school-hero" className="hero rounded-3xl p-6 text-white md:p-8">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
             <div className="text-[13px] font-medium uppercase tracking-wider text-white/60">{t("nav_my_school")}</div>
@@ -47,12 +48,18 @@ export default function MySchool() {
               <span className="hero-chip"><Users className="h-3.5 w-3.5" />{s.n_students} {t("students")}</span>
             </div>
           </div>
+          <div className="flex flex-col items-end gap-3">
+          <div className="flex flex-wrap justify-end gap-2">
+            <Link data-tour="school-report" to={`/school-report?school=${s.school_id}`} className="hero-chip text-[13px] font-medium hover:bg-white/25"><FileText className="h-3.5 w-3.5" />{t("sr_button")}</Link>
+            {user?.role !== "director" && <Link to={`/compare?a=${s.school_id}`} className="hero-chip text-[13px] font-medium hover:bg-white/25"><GitCompareArrows className="h-3.5 w-3.5" />{t("cmp_button")}</Link>}
+          </div>
           <div className="rounded-2xl bg-white/10 px-6 py-4 text-right ring-1 ring-white/15 backdrop-blur">
             <div className="text-[12px] uppercase tracking-wider text-white/60">{t("sc_va")}</div>
             <div className="text-4xl font-semibold tabular-nums">{signed(s.value_added)}<span className="ml-1 text-lg text-white/60">{t("pp")}</span></div>
             <div className="mt-1 text-[13px] text-white/75">
               {t("ms_better_than")} <b className="text-white">{data.percentile}%</b> {t("ms_of_schools")}
             </div>
+          </div>
           </div>
         </div>
       </div>
@@ -83,6 +90,7 @@ export default function MySchool() {
         </Card>
 
         <div className="space-y-6">
+          <div data-tour="focus">
           <Card title={<span className="flex items-center gap-2"><Target className="h-4 w-4 text-bad" />{t("ms_focus")}</span>}>
             <div className="space-y-2.5">
               {weak.map((x) => (
@@ -100,6 +108,7 @@ export default function MySchool() {
               {!weak.length && <div className="text-[13px] text-muted">—</div>}
             </div>
           </Card>
+          </div>
           <Card title={<span className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-good" />{t("ms_strengths")}</span>}>
             <div className="space-y-2">
               {strong.map((x) => (
@@ -127,7 +136,7 @@ export default function MySchool() {
         </div>
       </div>
 
-      <RiskPanel schoolId={s.school_id} />
+      <div data-tour="risk"><RiskPanel schoolId={s.school_id} /></div>
 
       <Card title={t("nav_topics")} pad={false}>
         <table className="tbl">
