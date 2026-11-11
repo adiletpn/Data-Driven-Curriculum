@@ -126,3 +126,35 @@ def equity(ds, subject_id: str) -> dict:
         return out
 
     return ds.cached(("equity", subject_id), build)
+
+
+def district_map(ds, subject_id: str) -> list[dict]:
+    """Per-district indicators for the region map."""
+    apply_exclusions(ds)
+
+    def build():
+        s = ds.topic_scores()
+        s = s[s["subject_id"] == subject_id]
+        va = {d["district"]: d for d in value_added(ds, subject_id)["districts"]}
+        sch_cat = pd.DataFrame(value_added(ds, subject_id)["schools"]).groupby("district")["category"]
+        region_topic = s.groupby("topic_id")["pct"].mean()
+        names = ds.topics.set_index("topic_id")
+        out = []
+        for dist, g in s.groupby("district"):
+            student = g.groupby("student_id")["pct"].mean()
+            gap = (g.groupby("topic_id")["pct"].mean() - region_topic).sort_values()
+            worst = gap.index[0]
+            cats = sch_cat.get_group(dist) if dist in sch_cat.groups else pd.Series(dtype=str)
+            out.append(dict(
+                district=dist, n_schools=int(g["school_id"].nunique()), n_students=int(g["student_id"].nunique()),
+                mean_pct=pp(student.mean()), mastered_share=pp(g["mastered"].mean()),
+                value_added=va.get(dist, {}).get("value_added"),
+                rural_share=pp((g.drop_duplicates("school_id")["locality"] == "rural").mean()),
+                kz_share=pp((g.drop_duplicates("school_id")["language"] == "kz").mean()),
+                below=int((cats == "below").sum()), above=int((cats == "above").sum()),
+                worst_topic=dict(topic_id=worst, name=names.loc[worst, "name"],
+                                 name_kz=names.loc[worst, "name_kz"] if "name_kz" in names else names.loc[worst, "name"],
+                                 gap=pp(gap.iloc[0]))))
+        return sorted(out, key=lambda x: x["district"])
+
+    return ds.cached(("districts", subject_id), build)
