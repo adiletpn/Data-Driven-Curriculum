@@ -31,7 +31,7 @@ def director():
     "/api/quality?subject=ALG7", "/api/schools?subject=ALG7", "/api/equity?subject=GEO7",
     "/api/insights?subject=GEO7", "/api/report?subject=ALG7&lang=kz", "/api/data/schema",
     "/api/districts?subject=ALG7", "/api/switching?subject=GEO7", "/api/pilot?subject=ALG7",
-    "/api/pilot?subject=GEO7&effect_pp=8", "/api/school/S072/risk?subject=ALG7", "/api/lesson?subject=ALG7&topic_id=A13&lang=kz",
+    "/api/pilot?subject=GEO7&effect_pp=8", "/api/school/S021/risk?subject=ALG7", "/api/lesson?subject=ALG7&topic_id=A13&lang=kz",
 ])
 def test_endpoints(client, path):
     r = client.get(path)
@@ -46,15 +46,15 @@ def test_requires_login():
 
 
 def test_director_sees_only_own_school(director):
-    assert director.get("/api/school/S072?subject=ALG7").status_code == 200
+    assert director.get("/api/school/S021?subject=ALG7").status_code == 200
     assert director.get("/api/school/S001?subject=ALG7").status_code == 403
     assert director.get("/api/schools?subject=ALG7").status_code == 403      # no cross-school ranking
     assert director.get("/api/textbooks?subject=ALG7").status_code == 403
-    assert director.get("/api/school/S072/risk?subject=ALG7").status_code == 200
+    assert director.get("/api/school/S021/risk?subject=ALG7").status_code == 200
     assert director.get("/api/school/S001/risk?subject=ALG7").status_code == 403
     assert director.get("/api/pilot?subject=ALG7").status_code == 403
     rows = director.get("/api/topics?subject=ALG7&school_id=S001").json()   # school filter is forced
-    own = director.get("/api/school/S072?subject=ALG7").json()["topics"]
+    own = director.get("/api/school/S021?subject=ALG7").json()["topics"]
     assert [r["mean_pct"] for r in rows] == [r["school"] for r in own]
 
 

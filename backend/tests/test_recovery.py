@@ -86,7 +86,7 @@ def test_textbook_switch_effects_recovered_by_did(ds):
 
 def test_early_warning_beats_chance(ds):
     from app.analytics.risk import school_risk
-    r = school_risk(ds, "ALG7", "S072")
+    r = school_risk(ds, "ALG7", "S021")
     assert r["model_auc"] > 0.7
 
 

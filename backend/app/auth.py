@@ -29,7 +29,7 @@ SECRET = (os.environ.get("DDC_SECRET") or "ddc-dev-secret-change-me").encode()
 DEMO_USERS = [
     dict(username="admin", password="admin2026", role="admin", name="Администратор", name_kz="Әкімші", school_id=None),
     dict(username="metodist", password="demo2026", role="methodologist", name="Методист облоно", name_kz="Облыстық әдіскер", school_id=None),
-    dict(username="director", password="demo2026", role="director", name="Директор школы №72", name_kz="№72 мектеп директоры", school_id="S072"),
+    dict(username="director", password="demo2026", role="director", name="Директор школы №21", name_kz="№21 мектеп директоры", school_id="S021"),
 ]
 
 
