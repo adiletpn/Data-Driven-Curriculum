@@ -56,27 +56,45 @@ def _design(df: pd.DataFrame, books: list[str], ref: str, interactions: tuple = 
     return X
 
 
+HETERO = ("lang_kz", "rural", "baseline_z")
+
+
+def _standardized_weights(df, books, ref, model, book):
+    """Contrast weights for 'every student of the region learns with `book`' (g-computation):
+    the mean design row of the counterfactual population, restricted to the fitted columns."""
+    Xb = _design(df.assign(textbook_id=book), books, ref, interactions=HETERO)
+    Xb.insert(0, "const", 1.0)
+    means = Xb.mean()
+    return {c: float(means.get(c, 0.0)) for c in model.params.index}
+
+
 def _fit_section(df: pd.DataFrame, books: list[str], ref: str) -> dict:
-    X = _design(df, books, ref)
+    """Textbook effects as population-average (standardized) contrasts.
+
+    The effect of a book may differ between kz/ru, urban/rural and stronger/weaker students. A main-effects
+    regression then returns a variance-weighted mix of those effects, tilted towards the schools where the
+    book happens to be common. We fit book x (language, locality, entry level) interactions and average the
+    predictions over ALL students, so the answer is "what if the whole region used this book".
+    """
+    X = _design(df, books, ref, interactions=HETERO)
     m = ClusterOLS(df["y"], X, df["school_id"])
-    base_pred = (m.X.drop(columns=[c for c in m.X.columns if c.startswith("tb[")]) @
-                 m.params.drop([c for c in m.params.index if c.startswith("tb[")])).mean()
+    W = {b: _standardized_weights(df, books, ref, m, b) for b in books}
+
+    def diff(a, b):
+        return {k: W[a].get(k, 0.0) - W[b].get(k, 0.0) for k in m.params.index}
+
     adjusted, naive = {}, {}
     for b in books:
         sub = df[df["textbook_id"] == b]
         nm, nlo, nhi = cluster_mean_ci(sub["y"], sub["school_id"])
         naive[b] = dict(mean=pp(nm), ci=[pp(nlo), pp(nhi)])
-        c = m.contrast({f"tb[{b}]": 1.0}) if b != ref else dict(est=0.0, lo=np.nan, hi=np.nan, p=np.nan)
-        adjusted[b] = dict(mean=pp(base_pred + c["est"]), effect_vs_ref=pp(c["est"]),
+        level = m.contrast(W[b])
+        c = m.contrast(diff(b, ref)) if b != ref else dict(est=0.0, lo=np.nan, hi=np.nan, p=np.nan)
+        adjusted[b] = dict(mean=pp(level["est"]), effect_vs_ref=pp(c["est"]),
                            ci=[pp(c["lo"]), pp(c["hi"])], p=r(c["p"], 4))
     pairs = []
     for a, b in combinations(books, 2):
-        w = {}
-        if a != ref:
-            w[f"tb[{a}]"] = 1.0
-        if b != ref:
-            w[f"tb[{b}]"] = w.get(f"tb[{b}]", 0) - 1.0
-        c = m.contrast(w)
+        c = m.contrast(diff(a, b))
         na, nb = naive[a]["mean"], naive[b]["mean"]
         pairs.append(dict(a=a, b=b, diff=pp(c["est"]), ci=[pp(c["lo"]), pp(c["hi"])], p=r(c["p"], 4),
                           significance=significance_label(c["p"]),
