@@ -241,6 +241,68 @@ main > * {
 
 }
 
+/* ---------- header ---------- */
+.header-bar {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+/* ---------- dark theme ---------- */
+html.dark {
+  color-scheme: dark;
+  --color-ink: #e6edf7;
+  --color-muted: #8b9bb4;
+  --color-line: #233148;
+  --color-canvas: #0a1120;
+  --color-accent: #2dd4bf;
+  --color-accent-soft: rgba(45, 212, 191, 0.12);
+  --color-good: #34d399;
+  --color-good-soft: rgba(52, 211, 153, 0.12);
+  --color-bad: #fb923c;
+  --color-bad-soft: rgba(251, 146, 60, 0.13);
+  --color-warn: #fbbf24;
+  --color-warn-soft: rgba(251, 191, 36, 0.12);
+}
+html.dark body {
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(45, 212, 191, 0.08), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(99, 102, 241, 0.1), transparent 60%),
+    var(--color-canvas);
+}
+html.dark .header-bar { background: rgba(10, 17, 32, 0.75); }
+html.dark .card { background: #0f192b; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.6); }
+html.dark .bg-white { background-color: #0f192b; }
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/60 { background-color: #13203a; }
+html.dark .bg-slate-100 { background-color: #1a2742; }
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover { background-color: #1a2742; }
+html.dark .text-slate-800,
+html.dark .text-slate-700 { color: #d6deea; }
+html.dark .text-slate-600 { color: #aab7cb; }
+html.dark .text-slate-500,
+html.dark .text-slate-400 { color: #7f90aa; }
+html.dark .fill-slate-800 { fill: #d6deea; }
+html.dark .fill-slate-400 { fill: #7f90aa; }
+html.dark .ring-slate-200,
+html.dark .ring-slate-300\/50 { --tw-ring-color: #233148; }
+html.dark .border-slate-200 { border-color: #233148; }
+html.dark .tbl th { background: #122036; }
+html.dark .divide-slate-100 > :not(:last-child),
+html.dark .divide-y > :not(:last-child) { border-color: #1d2b44; }
+html.dark .tbl td { border-bottom-color: #182640; }
+html.dark .tbl tbody tr:hover td { background: #13203a; }
+html.dark .btn { background: #13203a; color: var(--color-ink); border-color: var(--color-line); }
+html.dark .btn:hover { background: #1a2742; }
+html.dark .btn-primary { background: linear-gradient(180deg, #14b8a6, #0d9488); color: #fff; }
+html.dark .input,
+html.dark select,
+html.dark input[type="text"],
+html.dark input:not([type]) { background: #0f192b; color: var(--color-ink); border-color: var(--color-line); }
+html.dark svg rect[fill="#fff"] { fill: #0f192b; }
+html.dark .recharts-cartesian-grid line { stroke: #1d2b44; }
+html.dark .recharts-default-tooltip { background: #0f192b !important; border-color: #233148 !important; }
+html.dark .recharts-text { fill: #8b9bb4; }
+
 /* ---------- motion ---------- */
 @keyframes page-in {
   from {
